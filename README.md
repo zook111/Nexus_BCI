@@ -28,6 +28,10 @@ For the recommended setup, use **macOS 13.5 or later**, **Python 3.12+**, **Node
 
 If you use nvm, run `nvm install && nvm use` after cloning. Intel Mac and physical-headset installation still need independent validation; the services are also tested in Linux CI. The desktop launcher is macOS-specific.
 
+**Intel MacBook on Ventura:** use macOS **13.5 or later** (13.7.8 meets this minimum), the standard [Python 3.13 macOS installer](https://www.python.org/downloads/release/python-31316/) and **Node 24 for macOS x64/Intel**. The Python installer supports Intel Macs; use its standard build. These versions have been checked for compatible dependency wheels and native-library targets. Running Nexus and collecting headset data on an Intel Ventura Mac still need an on-device test.
+
+If Git prompts for Apple's Command Line Tools, finish that installation first. You can start it with `xcode-select --install`; the full Xcode application is not needed. After installing Python and Node, open a new Terminal and check `python3.13 --version` and `node --version`.
+
 ### 2. Install Nexus
 
 ```bash
@@ -36,6 +40,8 @@ cd nexus
 ./script/setup.sh
 ./script/install_desktop_launcher.sh
 ```
+
+For the Intel/Ventura setup above, replace `./script/setup.sh` with `NEXUS_PYTHON=python3.13 ./script/setup.sh` to select that interpreter explicitly. Use a fresh checkout on each machine; setup creates its local `.venv` and `node_modules`.
 
 Open **Nexus Server** on your Desktop. It starts the local services and opens [localhost:5173](http://localhost:5173). Open it again to stop them. Keep the checkout in place: the launcher points to it.
 

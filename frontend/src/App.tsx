@@ -4019,6 +4019,7 @@ function App() {
                 Save
               </button>
             </div>
+            {recording.message && <p role="alert">{recording.message}</p>}
             <div className="setup-guide" aria-label="Guided baseline setup">
               <div>
                 <span

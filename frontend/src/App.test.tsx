@@ -177,3 +177,11 @@ it('refreshes backend state after a failed Start so a lost prepared session offe
   await waitFor(() => expect(controls.getByRole('button', { name: 'Start' })).toBeDisabled())
   expect(controls.getByRole('button', { name: 'Reset' })).toBeEnabled()
 })
+
+it('shows an incomplete recording storage failure beside the recording controls', async () => {
+  const message = 'Recording stopped incomplete: storage failure: disk full'
+  apiMock.recording.mockResolvedValue({ ...emptyRecording, message })
+  render(<App />)
+  expect(await screen.findByText(message)).toHaveAttribute('role', 'alert')
+  expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+})

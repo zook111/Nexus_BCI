@@ -67,7 +67,7 @@ In **Console**, choose **Synthetic** as the board. Click **Connect**, then **Sta
 
 ## 9. Save a short practice recording
 
-Enter a session label such as **synthetic-practice**. Click **Record**, wait about 30 seconds, then click **Save**. Under **Telemetry**, find the saved session and open its preview. Download its CSV if you want a spreadsheet copy. Check that it contains timestamps and signal values.
+Enter a session label such as **synthetic-practice**. Click **Record** and wait about 30 seconds. Click **Capture setup** to store a signal-quality snapshot, then click **Save**. Save becomes available only after that snapshot. Under **Telemetry**, find the saved session and open its preview. Download its CSV if you want a spreadsheet copy. Check that it contains timestamps and signal values.
 
 ## 10. Explore, then close the app
 

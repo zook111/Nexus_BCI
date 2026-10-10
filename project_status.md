@@ -25,7 +25,7 @@ Clean Python 3.12 / Node 24 setup, backend Ruff and 161 tests, frontend lint and
 
 ## Known limits and next steps
 
-- A two-page Intel/Ventura setup PDF and copyable text guide are available in `docs/`. Both pages were rendered and reviewed; six links and the installation command text were checked.
+- A two-page Intel/Ventura setup PDF and copyable text guide are available in `docs/`. Both pages were rendered and reviewed; six links and the installation command text were checked. The practice flow was followed in a browser: Record, Capture setup, Save and Preview, producing a synthetic session with 11,551 samples and one setup snapshot.
 - GitHub `main` protection is active: PRs required for administrators too, Backend/Frontend/Tracked files and Git history checks required, conversations resolved, and force pushes/deletion disabled. No approving reviewer count is added; the existing five-minute review policy remains.
 
 - Experiment-linked recordings are retained until linked experiment deletion is supported.

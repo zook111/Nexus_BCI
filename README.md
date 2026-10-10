@@ -53,7 +53,7 @@ Reinstallation makes recoverable backups. A legacy Mindmeld launcher is retired 
 
 1. Open **Console**, choose **Synthetic**, and click **Connect**, then **Start**.
 2. Watch the waveforms, per-channel quality and frequency-band summary.
-3. Enter a session label, click **Record**, then **Save**. Preview or download the CSV under **Telemetry**.
+3. Enter a session label, click **Record**, then **Capture setup** after a quality window is available, and **Save**. Preview or download the CSV under **Telemetry**.
 4. Open **Experiment Lab → How the classifier works**. The lesson works without a headset or any participant recording.
 5. Use **Stop** to stop acquisition and **Reset** to release the board.
 

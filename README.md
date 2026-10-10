@@ -30,6 +30,8 @@ If you use nvm, run `nvm install && nvm use` after cloning. Intel Mac and physic
 
 **Intel MacBook on Ventura:** use macOS **13.5 or later** (13.7.8 meets this minimum), the standard [Python 3.13 macOS installer](https://www.python.org/downloads/release/python-31316/) and **Node 24 for macOS x64/Intel**. The Python installer supports Intel Macs; use its standard build. These versions have been checked for compatible dependency wheels and native-library targets. Running Nexus and collecting headset data on an Intel Ventura Mac still need an on-device test.
 
+Send your team the [two-page Intel/Ventura setup guide (PDF)](docs/intel-ventura-setup.pdf), or use its [copyable text version](docs/intel-ventura-setup.md). It walks through installation, a first simulated recording and troubleshooting.
+
 If Git prompts for Apple's Command Line Tools, finish that installation first. You can start it with `xcode-select --install`; the full Xcode application is not needed. After installing Python and Node, open a new Terminal and check `python3.13 --version` and `node --version`.
 
 ### 2. Install Nexus
@@ -51,7 +53,7 @@ Reinstallation makes recoverable backups. A legacy Mindmeld launcher is retired 
 
 1. Open **Console**, choose **Synthetic**, and click **Connect**, then **Start**.
 2. Watch the waveforms, per-channel quality and frequency-band summary.
-3. Enter a session label, click **Record**, then **Save**. Preview or download the CSV under **Telemetry**.
+3. Enter a session label, click **Record**, then **Capture setup** after a quality window is available, and **Save**. Preview or download the CSV under **Telemetry**.
 4. Open **Experiment Lab → How the classifier works**. The lesson works without a headset or any participant recording.
 5. Use **Stop** to stop acquisition and **Reset** to release the board.
 

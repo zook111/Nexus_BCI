@@ -5,6 +5,7 @@ import { api, recordingDownloadUrl } from '../api'
 import { experimentApi, type Experiment, type ExperimentClient, type Readiness, type Report, type Trial } from './api'
 import { downloadJson, mergeReports, nextLabel, presets, wait, type Preset } from './protocol'
 import './ExperimentLab.css'
+import { DEFAULT_LINE_FREQUENCY_HZ, normalizeLineFrequencyHz } from '../config'
 import { ClassifierLesson } from './lesson/ClassifierLesson'
 
 type Props = {
@@ -13,6 +14,7 @@ type Props = {
   onConsole: () => void
   onRecording: (value: RecordingState) => void
   client?: ExperimentClient
+  lineFrequencyHz?: number
 }
 const errorText = (error: unknown) => error instanceof Error ? error.message : 'Operation failed'
 const percent = (value: number) => `${(value * 100).toFixed(1)}%`
@@ -38,7 +40,7 @@ function TrialRow({ trial, labels, disabled, onEdit }: {
   </tr>
 }
 
-export function ExperimentLab({ active, board, onConsole, onRecording, client = experimentApi }: Props) {
+export function ExperimentLab({ active, board, onConsole, onRecording, client = experimentApi, lineFrequencyHz = DEFAULT_LINE_FREQUENCY_HZ }: Props) {
   const [showLesson, setShowLesson] = useState(false)
   const [sessionsReady, setSessionsReady] = useState(false)
   const [sessions, setSessions] = useState<Experiment[]>([])
@@ -180,7 +182,7 @@ export function ExperimentLab({ active, board, onConsole, onRecording, client = 
   }
   async function create() {
     await action(async () => {
-      const session = await client.create({ participant, name, labels, channels: chosenChannels })
+      const session = await client.create({ participant, name, labels, channels: chosenChannels, line_frequency_hz: normalizeLineFrequencyHz(lineFrequencyHz) })
       update(session); setSelectedId(session.session_id); setReadiness(null)
       await syncRecording()
     })
@@ -322,7 +324,7 @@ export function ExperimentLab({ active, board, onConsole, onRecording, client = 
         <option value="">Select a recording</option>{sessions.map(s => <option key={s.session_id} value={s.session_id}>{s.name} · {s.participant} · {s.status} · {new Date(s.created_at).toLocaleString()}</option>)}
       </select></label>
       {selected && <>
-        <p>{selected.channels.join(', ')} · {selected.sampling_rate} Hz · {selected.board}. Uncheck trials with movement or missed instructions. Add a note to explain exclusions.</p>
+        <p>{selected.channels.join(', ')} · {selected.sampling_rate} Hz · {selected.line_frequency_hz} Hz mains · {selected.board}. Uncheck trials with movement or missed instructions. Add a note to explain exclusions.</p>
         <div className="lab-table"><table><thead><tr><th>Include</th><th>Task label</th><th>Duration</th><th>Notes / issues</th></tr></thead>
           <tbody>{selected.trials.map(trial => <TrialRow key={trial.id} trial={trial} labels={selected.labels} disabled={busy || running} onEdit={(t, change) => void edit(t, change)} />)}</tbody>
         </table>{selected.trials.length === 0 && <p>No trials yet. Use Record next trial to label one automatically.</p>}</div>

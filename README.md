@@ -121,7 +121,7 @@ Nexus supports **Cyton, 8 channels**, and **Cyton Daisy, 16 channels**, with the
 
 Select the correct board and recommended serial port, then **Connect → Start**. On macOS, prefer `/dev/cu.*` ports. Hardware connection is manual by default. A generic FTDI or Bluetooth port does not prove that the right board is attached.
 
-Before collecting trials, check advancing timestamps and several consecutive usable quality windows. Secure electrode/reference contacts and review artefacts. Filtering cannot repair a disconnected contact. Mains filtering defaults to **50 Hz**; adjust it in a 60 Hz region.
+Before collecting trials, check advancing timestamps and several consecutive usable quality windows. Secure electrode/reference contacts and review artefacts. Filtering cannot repair a disconnected contact. Mains filtering defaults to **50 Hz**; adjust it in a 60 Hz region before creating an experiment. Experiment Lab stores that setting for live checks, offline rejection and matching training/test sessions.
 
 ## Keep your data local
 
@@ -155,7 +155,7 @@ Defaults work without an environment file. For backend options, copy `backend/.e
 | Port 8000 or 5173 is occupied | Stop the application that owns it. Nexus does not kill unrelated listeners. |
 | No suitable USB port | Check the dongle and adapter, then Refresh. Use Synthetic to test the software separately. |
 | `BOARD_NOT_READY_ERROR:7` | Check board power/radio mode. Release the port, wait a few seconds, then Reset and reconnect. |
-| Frozen samples or a lost session | Check timestamps; Reset, let the dongle settle, then Connect and Start. |
+| Frozen samples or a lost session | The live socket retries with bounded backoff; Refresh retries again if needed. For a lost native board, Reset, let the dongle settle, then Connect and Start. |
 | Noisy channels | Secure reference/bias and electrode contacts, keep leads away from power supplies, and try the laptop on battery. |
 | No spoken cue | Visual instructions remain available. Browser speech support varies; audio requires a user interaction. |
 

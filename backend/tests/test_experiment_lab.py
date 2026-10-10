@@ -1,4 +1,5 @@
 import csv
+import json
 import time
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -116,13 +117,15 @@ def test_test_labels_never_affect_fitted_model_or_predictions(lab):
 
 
 @pytest.mark.parametrize(
-    "kind", ["same", "participant", "channels", "labels", "board", "identical"]
+    "kind", ["same", "participant", "channels", "labels", "board", "identical", "line_frequency_hz"]
 )
 def test_incompatible_or_leaking_splits_rejected(lab, kind):
     recording(lab, "train")
     test = recording(lab, "test", seed=2)
     if kind in ("participant", "board"):
         setattr(test, kind, "different")
+    elif kind == "line_frequency_hz":
+        test.line_frequency_hz = 60
     elif kind == "channels":
         test.channels.reverse()
     elif kind == "labels":
@@ -328,3 +331,97 @@ def test_recorder_flushes_tail_and_refuses_to_stop_another_session(tmp_path):
         assert len(set(row[0] for row in rows)) == len(rows)
     finally:
         board.disconnect()
+
+
+def test_mains_capture_roundtrip_and_legacy_default(live_lab):
+    lab, session, _ = live_lab
+    assert session.line_frequency_hz == 50
+    lab.stop(session.session_id)
+    captured = lab.create(
+        ExperimentCreate(
+            name="60 Hz capture",
+            participant="P01",
+            labels=["A", "B"],
+            channels=["C3", "C4"],
+            line_frequency_hz=60,
+        )
+    )
+    restarted = ExperimentService(lab.board, lab.root.parent)
+    assert restarted.get(captured.session_id).line_frequency_hz == 60
+    payload = json.loads(lab._path(captured.session_id).read_text())
+    assert payload["line_frequency_hz"] == 60
+    del payload["line_frequency_hz"]
+    lab._path(captured.session_id).write_text(json.dumps(payload))
+    assert restarted.get(captured.session_id).line_frequency_hz == 50
+
+
+@pytest.mark.parametrize("frequency", [0, -50, 121, float("nan"), float("inf")])
+def test_invalid_mains_values_rejected(frequency):
+    with pytest.raises(ValueError):
+        ExperimentCreate(
+            name="Test",
+            participant="P01",
+            labels=["A", "B"],
+            channels=["C3", "C4"],
+            line_frequency_hz=frequency,
+        )
+
+
+def test_live_readiness_rejects_noise_at_captured_60_hz(live_lab):
+    lab, session, _ = live_lab
+    session.line_frequency_hz = 60
+    lab._write(lab._path(session.session_id), session)
+    t = np.arange(500) / 250
+    samples = 20 * np.sin(2 * np.pi * 12 * t) + 80 * np.sin(2 * np.pi * 60 * t)
+
+    def quality(*, window_size, line_frequency_hz):
+        return SimpleNamespace(
+            channels=[
+                BrainFlowBoardService._summarize_signal_quality_channel(
+                    index=index,
+                    label=channel,
+                    samples=samples,
+                    sampling_rate=250,
+                    line_frequency_hz=line_frequency_hz,
+                    flatline_threshold=1,
+                    rail_threshold=150000,
+                    noise_rms_threshold=150,
+                )
+                for index, channel in enumerate(session.channels)
+            ]
+        )
+
+    lab.board.signal_quality.side_effect = quality
+    result = lab.readiness(session.session_id)
+    assert not result.ready and result.clean_windows == 0
+    assert "Adjust selected electrodes" in result.reason
+    lab.board.signal_quality.assert_called_once_with(window_size=500, line_frequency_hz=60)
+    assert all(c.status == "good" for c in quality(window_size=500, line_frequency_hz=50).channels)
+
+
+def test_offline_epochs_reject_captured_60_hz_noise(lab):
+    experiment = recording(lab, "mains", count=1, synthetic=True)
+    experiment.line_frequency_hz = 60
+    path = lab.root.parent / "mains.csv"
+    data = np.loadtxt(path, delimiter=",", skiprows=1)
+    data[:, 1:] += (80 * np.sin(2 * np.pi * 60 * np.arange(len(data)) / 250))[:, None]
+    np.savetxt(path, data, delimiter=",", header="timestamp,C3,C4", comments="")
+    epochs, _, _, rejected, _ = lab._epochs(experiment)
+    assert len(epochs) == 0
+    assert len(rejected) == 2
+    assert all(any("line_noise" in reason for reason in reasons) for reasons in rejected.values())
+    # This same signal evades a 50 Hz-only check, which is the regression being fixed.
+    epochs, _, _, rejected, _ = lab._epochs(experiment.model_copy(update={"line_frequency_hz": 50}))
+    assert len(epochs) == 2 and not rejected
+
+
+def test_matching_60_hz_evaluation_preserves_mains_provenance(lab):
+    for name, seed, count in [("train", 1, 5), ("test", 2, 2)]:
+        experiment = recording(lab, name, seed=seed, count=count, synthetic=True)
+        experiment.line_frequency_hz = 60
+        lab._write(lab._path(name), experiment)
+    report = lab.evaluate(EvaluateRequest(training_session_id="train", test_session_id="test"))
+    assert report.provenance["line_frequency_hz"] == 60
+    assert report.provenance["training_annotations"]["line_frequency_hz"] == 60
+    assert report.provenance["test_annotations"]["line_frequency_hz"] == 60
+    assert lab.reports()[0].provenance == report.provenance

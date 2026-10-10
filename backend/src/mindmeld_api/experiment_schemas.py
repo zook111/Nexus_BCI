@@ -13,6 +13,7 @@ class ExperimentCreate(BaseModel):
     name: Name
     labels: list[Name] = Field(min_length=2, max_length=4)
     channels: list[Name] = Field(min_length=2, max_length=16)
+    line_frequency_hz: float = Field(default=50.0, gt=0.0, le=120.0, allow_inf_nan=False)
 
     @model_validator(mode="after")
     def unique_fields(self):
@@ -58,6 +59,7 @@ class Experiment(BaseModel):
     channels: list[str]
     board: str
     sampling_rate: int
+    line_frequency_hz: float = Field(default=50.0, gt=0.0, le=120.0, allow_inf_nan=False)
     created_at: str
     status: Literal["recording", "saved", "interrupted"] = "recording"
     trials: list[Trial] = Field(default_factory=list)

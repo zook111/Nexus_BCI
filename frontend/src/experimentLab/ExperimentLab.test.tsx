@@ -7,7 +7,7 @@ import { api, type BoardState } from '../api'
 
 const board: BoardState = { status: 'streaming', board: 'synthetic', sampling_rate: 250, eeg_names: ['C3', 'C4', 'O1', 'O2'], eeg_channels: [1, 2, 3, 4] }
 const trial: Trial = { id: 't1', label: 'Eyes open', start_timestamp: 100, end_timestamp: 106, duration_seconds: 6, included: true, issues: [], note: '' }
-const session: Experiment = { schema_version: 1, session_id: 'session-1', name: 'Day 1', participant: 'P01', labels: ['Eyes open', 'Eyes closed'], channels: ['O1', 'O2'], board: 'synthetic', sampling_rate: 250, created_at: '2026-09-30T12:00:00Z', status: 'recording', trials: [] }
+const session: Experiment = { schema_version: 1, session_id: 'session-1', name: 'Day 1', participant: 'P01', labels: ['Eyes open', 'Eyes closed'], channels: ['O1', 'O2'], board: 'synthetic', sampling_rate: 250, line_frequency_hz: 50, created_at: '2026-09-30T12:00:00Z', status: 'recording', trials: [] }
 function clientFor(sessions: Experiment[] = [session]) {
   let current = structuredClone(sessions)
   const client = {
@@ -309,4 +309,22 @@ it('clears a failed manual refresh alert when the operator retries successfully'
   await waitFor(() => expect(client.list).toHaveBeenCalledTimes(3))
   expect(screen.queryByText('Temporary session failure')).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Save recording' })).toBeEnabled()
+})
+
+
+it.each([undefined, 60])('captures current mains frequency %s when creating an experiment', async frequency => {
+  const client = clientFor([])
+  client.create.mockResolvedValue({ ...session, line_frequency_hz: frequency ?? 50 })
+  render(<ExperimentLab active board={board} lineFrequencyHz={frequency} onConsole={vi.fn()} onRecording={vi.fn()} client={client} />)
+  fireEvent.click(await screen.findByRole('button', { name: 'Start labelled recording' }))
+  await waitFor(() => expect(client.create).toHaveBeenCalledWith(expect.objectContaining({ line_frequency_hz: frequency ?? 50 })))
+})
+
+it('keeps the recorded mains value visible after Console changes', async () => {
+  const client = clientFor([{ ...session, status: 'saved', line_frequency_hz: 60 }])
+  const props = { active: true, board, onConsole: vi.fn(), onRecording: vi.fn(), client }
+  const { rerender } = render(<ExperimentLab {...props} lineFrequencyHz={60} />)
+  await screen.findByText(/60 Hz mains/)
+  rerender(<ExperimentLab {...props} lineFrequencyHz={50} />)
+  expect(screen.getByText(/60 Hz mains/)).toBeInTheDocument()
 })

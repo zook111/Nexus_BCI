@@ -14,7 +14,7 @@ Public repository: [zook111/Nexus_BCI](https://github.com/zook111/Nexus_BCI).
 
 ## Verification
 
-Clean Python 3.12 / Node 24 setup, backend Ruff and 110 tests, frontend lint and 74 tests, and production build pass in this public checkout. Native macOS launcher and credential-scan checks are recorded in the initial-release PR. The origin tests cover allowed local clients, rejected unrelated browser origins and prevention of board side effects. All examples and screenshots use synthetic data.
+Clean Python 3.12 / Node 24 setup, backend Ruff and 125 tests, frontend lint and 82 tests, and production build pass in this public checkout. Native macOS launcher and credential-scan checks are recorded in the initial-release PR. The origin tests cover allowed local clients, rejected unrelated browser origins and prevention of board side effects. Review fixes preserve the final recording tail before Reset releases the board, capture per-experiment mains frequency for live/offline quality, and reconnect the live socket with bounded retries and cleanup. Browser checks verified synthetic streaming and the lesson. All examples and screenshots use synthetic data.
 
 ## Known limits and next steps
 

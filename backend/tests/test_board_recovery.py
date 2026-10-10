@@ -1,3 +1,4 @@
+import gc
 import time
 from pathlib import Path
 from unittest.mock import Mock
@@ -40,6 +41,9 @@ def test_released_native_board_pauses_stream_and_allows_reset_and_reconnect(tmp_
 
 @pytest.fixture
 def streaming_service(tmp_path):
+    # Fault-injection Mock cycles can delay BoardShim finalizers. Drain them before
+    # creating a new synthetic session with the same native board/parameter key.
+    gc.collect()
     service = BrainFlowBoardService(tmp_path)
     service.connect(BoardConnectionRequest(board=BoardKind.synthetic))
     service.start_stream()

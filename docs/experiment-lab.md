@@ -29,7 +29,7 @@ Switching views or hiding the browser tab cancels the current guided trial. The 
 
 ## Train and evaluate
 
-Select distinct saved **Training recording** and **Test recording** sessions, then press **Train pyRiemann & evaluate**. They must use the same participant code, board, sample rate, electrode list/order and task-label set. Identical raw files are rejected even if they have different session IDs. At least five accepted training trials and two accepted test trials per class are required; these are operating minimums, not a claim of statistical adequacy.
+Select distinct saved **Training recording** and **Test recording** sessions, then press **Train pyRiemann & evaluate**. They must use the same participant code, board, sample rate, electrode list/order, captured mains frequency and task-label set. Identical raw files are rejected even if they have different session IDs. At least five accepted training trials and two accepted test trials per class are required; these are operating minimums, not a claim of statistical adequacy.
 
 The fixed pipeline is:
 
@@ -48,7 +48,7 @@ Do not repeatedly tune an experiment against its final test data. If you use a t
 
 ## Quality and timing limits
 
-Live readiness uses the existing acquisition-quality diagnostics at 50 Hz mains frequency. During capture, a failed check permanently excludes that trial. Offline extraction additionally rejects nonfinite samples, missing edges, gaps greater than three sample periods, short trials, flatlines, railing, high filtered RMS and excessive line noise using the same channel-quality implementation as Console. Interrupted trials cannot be manually forced back in.
+Each new experiment captures the Console mains-frequency setting. Live readiness and offline rejection use that saved value, even if the Console setting later changes. Legacy annotations without a mains field default to 50 Hz; collect a new session with an explicit setting when working in a 60 Hz region. Live readiness uses the existing acquisition-quality diagnostics at the captured mains frequency. During capture, a failed check permanently excludes that trial. Offline extraction additionally rejects nonfinite samples, missing edges, gaps greater than three sample periods, short trials, flatlines, railing, high filtered RMS and excessive line noise using the same channel-quality implementation as Console. Interrupted trials cannot be manually forced back in.
 
 These checks do not establish absence of eye/muscle artefacts. Review movement, cue following and consistency independently. A cue appears before capture and the classifier discards a further second, but browser and API latency mean markers are not hardware-synchronised stimulus onset measurements. This protocol is intended for sustained tasks, not short-latency evoked-potential experiments.
 

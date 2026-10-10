@@ -19,6 +19,7 @@ export type Experiment = {
   channels: string[]
   board: string
   sampling_rate: number
+  line_frequency_hz: number
   created_at: string
   status: 'recording' | 'saved' | 'interrupted'
   trials: Trial[]
@@ -69,7 +70,7 @@ const path = (id: string) => `/${encodeURIComponent(id)}`
 export const experimentApi = {
   list: () => request<Experiment[]>(''),
   get: (id: string) => request<Experiment>(path(id)),
-  create: (body: { name: string; participant: string; labels: string[]; channels: string[] }) =>
+  create: (body: { name: string; participant: string; labels: string[]; channels: string[]; line_frequency_hz?: number }) =>
     request<Experiment>('', body),
   readiness: (id: string) => request<Readiness>(`${path(id)}/readiness`),
   start: (id: string, body: { id: string; label: string; duration_seconds: number }) =>

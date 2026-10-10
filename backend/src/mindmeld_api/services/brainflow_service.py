@@ -923,7 +923,8 @@ class BrainFlowBoardService:
         if self._recording_session_id and self._recording_stopped_at is None:
             self._recording_message = message
         try:
-            self._release_locked()
+            # Recovery already knows the native session is unusable; do not read it again.
+            self._release_locked(flush_recording=False)
         except RuntimeError as exc:
             message = f"{message} {exc}"
         except OSError as exc:
@@ -934,8 +935,26 @@ class BrainFlowBoardService:
             self._last_error = message
             self._reset_calm_calibration_locked()
 
-    def _release_locked(self) -> None:
+    def _release_locked(self, *, flush_recording: bool = True) -> None:
         self._request_recording_stop_locked()
+        try:
+            if (
+                flush_recording
+                and self._recording_session_id
+                and self._recording_stopped_at is None
+            ):
+                try:
+                    self._flush_recording_locked(recover_board=False)
+                except BrainFlowError as exc:
+                    # A lost session has no readable tail. Teardown below owns recovery.
+                    self._recording_message = f"Signal paused: {exc}. Reset and connect again."
+                except OSError as exc:
+                    self._recording_message = f"Recording could not be fully saved: {exc}"
+                    raise
+        finally:
+            self._release_native_and_finalize_locked()
+
+    def _release_native_and_finalize_locked(self) -> None:
         released = self._board is None
         release_error: BrainFlowError | None = None
         if self._board is not None:
@@ -1731,8 +1750,8 @@ class BrainFlowBoardService:
             if stop_event.wait(0.25):
                 return
 
-    def _flush_recording_locked(self) -> None:
-        rows, max_timestamp = self._collect_recording_rows()
+    def _flush_recording_locked(self, *, recover_board: bool = True) -> None:
+        rows, max_timestamp = self._collect_recording_rows(recover_board=recover_board)
         if rows and self._recording_file_path is not None:
             with self._recording_file_path.open("a", newline="") as csv_file:
                 writer(csv_file).writerows(rows)
@@ -1740,7 +1759,9 @@ class BrainFlowBoardService:
             self._recording_last_timestamp = max_timestamp
             self._write_recording_metadata_locked()
 
-    def _collect_recording_rows(self) -> tuple[list[list[float]], float | None]:
+    def _collect_recording_rows(
+        self, *, recover_board: bool = True
+    ) -> tuple[list[list[float]], float | None]:
         with self._lock:
             if (
                 self._board is None
@@ -1751,7 +1772,13 @@ class BrainFlowBoardService:
                 return [], self._recording_last_timestamp
 
             sample_window = max((self._safe_sampling_rate_locked() or 250) * 2, 250)
-            data = self._current_board_data_locked(sample_window)
+            # During teardown, the caller owns native cleanup. Avoid re-entering
+            # recovery (and release) if this last read discovers a lost session.
+            data = (
+                self._current_board_data_locked(sample_window)
+                if recover_board
+                else self._board.get_current_board_data(sample_window)
+            )
             sample_count = int(data.shape[1]) if data.size else 0
             timestamp_channel = self._safe_timestamp_channel_locked()
             if timestamp_channel is None or not sample_count:

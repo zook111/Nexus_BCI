@@ -107,6 +107,7 @@ class ExperimentService:
                 channels=request.channels,
                 board=state.board.value,
                 sampling_rate=state.sampling_rate,
+                line_frequency_hz=request.line_frequency_hz,
                 created_at=now(),
             )
             try:
@@ -127,7 +128,9 @@ class ExperimentService:
             experiment = self._current(session_id)
             snapshot = self.board.snapshot(max_samples=1)
             stamp = snapshot.timestamps[-1] if snapshot.timestamps else None
-            quality = self.board.signal_quality(window_size=500, line_frequency_hz=50)
+            quality = self.board.signal_quality(
+                window_size=500, line_frequency_hz=experiment.line_frequency_hz
+            )
             selected = [c for c in quality.channels if c.label in experiment.channels]
             reason = ""
             if snapshot.status != "streaming" or stamp is None or not np.isfinite(stamp):
@@ -311,7 +314,7 @@ class ExperimentService:
                     label=experiment.channels[index],
                     samples=channel,
                     sampling_rate=rate,
-                    line_frequency_hz=50,
+                    line_frequency_hz=experiment.line_frequency_hz,
                     flatline_threshold=1.0,
                     rail_threshold=150000,
                     noise_rms_threshold=150,
@@ -360,16 +363,21 @@ class ExperimentService:
                 train.participant,
                 train.channels,
                 train.sampling_rate,
+                train.line_frequency_hz,
                 train.board,
                 sorted(train.labels),
             ) != (
                 test.participant,
                 test.channels,
                 test.sampling_rate,
+                test.line_frequency_hz,
                 test.board,
                 sorted(test.labels),
             ):
-                raise ValueError("Use the same participant code, electrodes, board and task labels")
+                raise ValueError(
+                    "Use the same participant code, electrodes, board, mains frequency "
+                    "and task labels"
+                )
             x_train, y_train, _, rejected_train, train_hash = self._epochs(train)
             x_test, y_test, test_ids, rejected_test, test_hash = self._epochs(test)
         if train_hash == test_hash:
@@ -425,6 +433,7 @@ class ExperimentService:
             provenance={
                 "pipeline_version": "experiment-lab-v1",
                 "sampling_rate": train.sampling_rate,
+                "line_frequency_hz": train.line_frequency_hz,
                 "bandpass_hz": [8, 30],
                 "filter": "Butterworth order 4, zero-phase per trial",
                 "epoch_seconds": [1, 4],

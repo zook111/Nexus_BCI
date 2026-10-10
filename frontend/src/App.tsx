@@ -51,6 +51,7 @@ import {
 } from './deviceSetup'
 import { DoctorDemo } from './doctorDemo/DoctorDemo'
 import { ExperimentLab } from './experimentLab/ExperimentLab'
+import { connectLiveStream } from './liveStream'
 import type {
   BoardKind,
   BoardState,
@@ -2948,6 +2949,7 @@ function App() {
   const [calibrationElapsedSeconds, setCalibrationElapsedSeconds] = useState(0)
   const [calibrationMarkers, setCalibrationMarkers] = useState<CalibrationMarker[]>([])
   const [error, setError] = useState<string | null>(null)
+  const liveConnectionRef = useRef<ReturnType<typeof connectLiveStream> | null>(null)
   const dspRef = useRef<DspSummary | null>(null)
   const signalQualityRef = useRef<SignalQuality | null>(null)
   const streamRef = useRef<StreamSnapshot>(emptyStream)
@@ -2963,6 +2965,7 @@ function App() {
   const dspControlsValid = dspValidationMessage === null
 
   const refresh = useCallback(async () => {
+    liveConnectionRef.current?.retry()
     setError(null)
     try {
       const {
@@ -3249,24 +3252,29 @@ function App() {
   }, [])
 
   useEffect(() => {
-    const websocket = new WebSocket(STREAM_WS_URL)
-
-    websocket.onmessage = (event) => {
-      const snapshot = JSON.parse(event.data) as StreamSnapshot
-      setStream(snapshot)
-      if (snapshot.status === 'error') {
-        setBoard(current => current.status === 'streaming' || current.status === 'prepared'
-          ? { ...current, status: 'error', message: snapshot.message }
-          : current)
-        setError(snapshot.message || 'Signal paused. Reset and connect again.')
-      }
+    const connection = connectLiveStream(STREAM_WS_URL, {
+      snapshot(snapshot) {
+        setStream(snapshot)
+        if (snapshot.status === 'error') {
+          setBoard(current => current.status === 'streaming' || current.status === 'prepared'
+            ? { ...current, status: 'error', message: snapshot.message }
+            : current)
+          setError(snapshot.message || 'Signal paused. Reset and connect again.')
+        } else {
+          setError(current => current?.startsWith('Live stream paused.') ? null : current)
+          if (snapshot.status === 'idle') setBoard(current => current.status === 'idle' ? current : emptyBoard)
+        }
+      },
+      unavailable(message) {
+        setStream(current => ({ ...current, status: 'error', sample_count: 0, timestamps: [], channels: [] }))
+        setError(message)
+      },
+    })
+    liveConnectionRef.current = connection
+    return () => {
+      liveConnectionRef.current = null
+      connection.close()
     }
-
-    websocket.onerror = () => {
-      setError('Live stream socket is unavailable')
-    }
-
-    return () => websocket.close()
   }, [])
 
   useEffect(() => {
@@ -4296,7 +4304,7 @@ function App() {
         ) : null}
 
         <div hidden={activeView !== 'experiment'}>
-          <ExperimentLab active={activeView === 'experiment'} board={board}
+          <ExperimentLab active={activeView === 'experiment'} board={board} lineFrequencyHz={lineFrequencyHz}
             onConsole={() => setActiveView('console')} onRecording={setRecording} />
         </div>
 

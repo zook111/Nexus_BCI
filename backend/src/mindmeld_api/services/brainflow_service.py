@@ -575,6 +575,11 @@ class BrainFlowBoardService:
 
     def delete_recording(self, session_id: str) -> None:
         metadata_path = self._recording_metadata_path_for_session(session_id)
+        if (self._recording_dir / "experiments" / f"{session_id}.json").exists():
+            raise RuntimeError(
+                "This recording belongs to an Experiment Lab session and cannot be deleted. "
+                "Keep it until Experiment Lab supports deleting the linked experiment."
+            )
         if not metadata_path.exists():
             raise FileNotFoundError(session_id)
 

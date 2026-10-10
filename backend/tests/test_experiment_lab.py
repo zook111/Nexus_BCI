@@ -425,3 +425,105 @@ def test_matching_60_hz_evaluation_preserves_mains_provenance(lab):
     assert report.provenance["training_annotations"]["line_frequency_hz"] == 60
     assert report.provenance["test_annotations"]["line_frequency_hz"] == 60
     assert lab.reports()[0].provenance == report.provenance
+
+
+def test_failed_experiment_save_retries_after_raw_recording_finalized(lab, monkeypatch):
+    experiment = recording(lab, "recover-save", synthetic=True)
+    experiment.status = "recording"
+    experiment.trials[-1].end_timestamp = None
+    lab._write(lab._path(experiment.session_id), experiment)
+    metadata = lab.board.get_recording(experiment.session_id)
+    current = metadata.model_copy(update={"active": True, "stopped_at": None})
+    monkeypatch.setattr(lab.board, "recording_state", lambda: current)
+
+    def stop(**kwargs):
+        nonlocal current
+        assert kwargs["expected_session_id"] == experiment.session_id
+        current = metadata
+        return metadata
+
+    stopper = Mock(side_effect=stop)
+    monkeypatch.setattr(lab.board, "stop_recording", stopper)
+    write = lab._write
+    attempts = 0
+
+    def fail_once(path, value):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise OSError("Experiment disk write failed")
+        write(path, value)
+
+    monkeypatch.setattr(lab, "_write", fail_once)
+    with pytest.raises(OSError, match="disk write failed"):
+        lab.stop(experiment.session_id)
+    assert not current.active
+    assert json.loads(lab._path(experiment.session_id).read_text())["status"] == "recording"
+    # A fresh service can reconcile disk evidence after process restart too.
+    restarted = ExperimentService(lab.board, lab.root.parent)
+    recovered = restarted.stop(experiment.session_id)
+    assert recovered.status == "saved"
+    assert not recovered.trials[-1].included
+    assert "unfinished_trial" in recovered.trials[-1].issues
+    assert restarted.get(experiment.session_id).status == "saved"
+    stopper.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "problem",
+    [
+        "active",
+        "unfinished",
+        "error",
+        "missing_csv",
+        "rate",
+        "board",
+        "channels",
+        "session",
+        "empty",
+    ],
+)
+def test_incomplete_raw_recording_is_not_reconciled_as_saved(lab, problem):
+    experiment = recording(lab, "incomplete", synthetic=True)
+    experiment.status = "recording"
+    experiment.trials[-1].end_timestamp = None
+    lab._write(lab._path(experiment.session_id), experiment)
+    path = lab.root.parent / "incomplete.json"
+    payload = json.loads(path.read_text())
+    if problem == "active":
+        payload["active"] = True
+    elif problem == "unfinished":
+        payload["stopped_at"] = None
+    elif problem == "error":
+        payload["message"] = "Recording stopped after native session was lost"
+    elif problem == "missing_csv":
+        (lab.root.parent / "incomplete.csv").unlink()
+    elif problem == "rate":
+        payload["sampling_rate"] = 200
+    elif problem == "board":
+        payload["board"] = "cyton"
+    elif problem == "channels":
+        payload["eeg_names"] = ["O1", "O2"]
+    elif problem == "session":
+        payload["session_id"] = "another"
+    elif problem == "empty":
+        payload["sample_count"] = 0
+    path.write_text(json.dumps(payload))
+    recovered = lab.stop(experiment.session_id)
+    assert recovered.status == "interrupted"
+    assert not recovered.trials[-1].included
+    assert "recording_interrupted" in recovered.trials[-1].issues
+
+
+def test_linked_recording_deletion_is_blocked_until_experiment_delete_exists(lab, monkeypatch):
+    experiment = recording(lab, "linked", synthetic=True)
+    csv_path = lab.root.parent / "linked.csv"
+    metadata_path = lab.root.parent / "linked.json"
+    monkeypatch.setattr(main, "board_service", lab.board)
+    response = TestClient(main.app).delete("/api/recordings/linked")
+    assert response.status_code == 409
+    assert "Experiment Lab" in response.json()["detail"]
+    assert csv_path.exists() and metadata_path.exists()
+    assert lab.get(experiment.session_id).status == "saved"
+    with pytest.raises(RuntimeError, match="Experiment Lab"):
+        lab.board.delete_recording(experiment.session_id)

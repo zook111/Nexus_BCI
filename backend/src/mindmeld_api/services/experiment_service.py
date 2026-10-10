@@ -69,11 +69,34 @@ class ExperimentService:
             if result.status == "recording" and (
                 not current.active or current.session_id != session_id
             ):
-                result.status = "interrupted"
+                try:
+                    recording = self.board.get_recording(session_id)
+                    finalized = (
+                        recording.session_id == session_id
+                        and not recording.active
+                        and recording.stopped_at is not None
+                        and not recording.message
+                        and recording.sample_count > 0
+                        and recording.sampling_rate == result.sampling_rate
+                        and recording.board is not None
+                        and recording.board.value == result.board
+                        and set(result.channels).issubset(recording.eeg_names)
+                        and self.board.recording_csv_path(session_id).is_file()
+                    )
+                except (FileNotFoundError, ValueError):
+                    finalized = False
+                result.status = "saved" if finalized else "interrupted"
                 for trial in result.trials:
                     if trial.end_timestamp is None:
                         trial.included = False
-                        trial.issues = list(set([*trial.issues, "recording_interrupted"]))
+                        trial.issues = list(
+                            set(
+                                [
+                                    *trial.issues,
+                                    "unfinished_trial" if finalized else "recording_interrupted",
+                                ]
+                            )
+                        )
                 self._write(self._path(session_id), result)
             return result
 

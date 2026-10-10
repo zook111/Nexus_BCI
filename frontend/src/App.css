@@ -114,12 +114,15 @@
   max-width: 1520px;
 }
 
-.workspace--doctor-demo {
+.workspace--doctor-demo,
+.workspace--help {
   display: block;
 }
 
 .workspace--doctor-demo > .controls-panel,
-.workspace--doctor-demo > .metrics-panel {
+.workspace--doctor-demo > .metrics-panel,
+.workspace--help > .controls-panel,
+.workspace--help > .metrics-panel {
   display: none;
 }
 

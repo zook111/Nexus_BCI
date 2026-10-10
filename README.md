@@ -122,6 +122,7 @@ The real classifier uses OAS-shrinkage covariance with pyRiemann and scikit-lear
 | --- | --- |
 | **Console** | Acquisition, raw traces, quality checks, DSP, recordings, replay and calibration markers. |
 | **Experiment Lab** | Guided task cues, balanced labels, trial review, separate training/test data and the maths lesson. |
+| **Help** | Bundled setup, eyes-open/closed experiment and first-week research PDFs, available offline. |
 | **Feedback Lab** | Optional visual and audio feedback that pauses when signal quality is inadequate. |
 | **Doctor Demo** | Eyes-open/closed demonstrations and confidence-gated group experiences. Non-clinical throughout. |
 

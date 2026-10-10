@@ -3,6 +3,7 @@ import {
   Activity,
   BarChart3,
   BrainCircuit,
+  BookOpen,
   Cable,
   Check,
   CircleAlert,
@@ -51,6 +52,7 @@ import {
 } from './deviceSetup'
 import { DoctorDemo } from './doctorDemo/DoctorDemo'
 import { ExperimentLab } from './experimentLab/ExperimentLab'
+import { StudentHelp } from './StudentHelp'
 import { connectLiveStream } from './liveStream'
 import type {
   BoardKind,
@@ -2929,7 +2931,7 @@ function App() {
   const [calmTrend, setCalmTrend] = useState<number[]>([])
   const [focusTrend, setFocusTrend] = useState<number[]>([])
   const [clarityTrend, setClarityTrend] = useState<number[]>([])
-  const [activeView, setActiveView] = useState<'console' | 'demo' | 'doctor-demo' | 'experiment'>('console')
+  const [activeView, setActiveView] = useState<'console' | 'demo' | 'doctor-demo' | 'experiment' | 'help'>('console')
   const [feedbackMode, setFeedbackMode] = useState<FeedbackMode>('calm')
   const [visualizerKind, setVisualizerKind] = useState<VisualizerKind>('aurora')
   const [feedbackAudioVoice, setFeedbackAudioVoice] =
@@ -3586,7 +3588,7 @@ function App() {
   const replayTraceMarkers = replay
     ? replayMarkerPositions(replayMarkers, replay.offset, replay.row_count, 520)
     : []
-  const activeReplayView = activeView === 'doctor-demo' || activeView === 'experiment' ? 'console' : activeView
+  const activeReplayView = activeView === 'demo' ? 'demo' : 'console'
 
   async function runAction(action: () => Promise<BoardState>) {
     setBusy(true)
@@ -3896,10 +3898,18 @@ function App() {
             }}>
             <BrainCircuit size={16} />Experiment Lab
           </button>
+          <button type="button" className={activeView === 'help' ? 'view-tabs__button--active' : ''}
+            aria-pressed={activeView === 'help'}
+            onClick={() => {
+              if (calibrationStatus === 'running') stopCalibrationProtocol()
+              setActiveView('help')
+            }}>
+            <BookOpen size={16} />Help
+          </button>
         </nav>
       </div>
 
-      <section className={`workspace ${activeView === 'doctor-demo' || activeView === 'experiment' ? 'workspace--doctor-demo' : ''}`}>
+      <section className={`workspace ${activeView === 'help' ? 'workspace--help' : activeView === 'doctor-demo' || activeView === 'experiment' ? 'workspace--doctor-demo' : ''}`}>
         <aside className="panel controls-panel">
           <div className="panel__header">
             <Cable size={18} />
@@ -4303,6 +4313,8 @@ function App() {
             baselineBusy={baselineBusy}
           />
         ) : null}
+
+        {activeView === 'help' && <StudentHelp />}
 
         <div hidden={activeView !== 'experiment'}>
           <ExperimentLab active={activeView === 'experiment'} board={board} lineFrequencyHz={lineFrequencyHz}

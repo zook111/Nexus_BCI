@@ -185,3 +185,25 @@ it('shows an incomplete recording storage failure beside the recording controls'
   expect(await screen.findByText(message)).toHaveAttribute('role', 'alert')
   expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
 })
+
+it('opens student Help without a headset and returns to Console', async () => {
+  vi.stubEnv('VITE_OPENBCI_AUTOCONNECT_SERIAL', '')
+  render(<App />)
+  fireEvent.click(screen.getByRole('button', { name: 'Help' }))
+  const help = screen.getByRole('region', { name: 'Help and student guides' })
+  for (const guide of [
+    { name: 'Open setup guide PDF (opens in a new tab)', file: 'intel-ventura-setup.pdf' },
+    { name: 'Open experiment guide PDF (opens in a new tab)', file: 'eyes-open-closed-experiment-guide.pdf' },
+    { name: 'Open research guide PDF (opens in a new tab)', file: 'student-starter-guide.pdf' },
+  ]) {
+    const link = within(help).getByRole('link', { name: guide.name })
+    expect(link.getAttribute('href')).toContain(guide.file)
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+  }
+  expect(screen.getByRole('button', { name: 'Help' })).toHaveAttribute('aria-pressed', 'true')
+  expect(apiMock.connect).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('button', { name: 'Console' }))
+  expect(screen.queryByRole('region', { name: 'Help and student guides' })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Console' })).toHaveAttribute('aria-pressed', 'true')
+})

@@ -8,7 +8,7 @@
 
 Record signals. Label experiments. Test a classifier. Understand the maths.
 
-[Start here](#start-here) · [Student guide](docs/student-starter-guide.pdf) · [Experiment Lab](docs/experiment-lab.md) · [Contributing](CONTRIBUTING.md)
+[Start here](#start-here) · [First experiment (PDF)](docs/eyes-open-closed-experiment-guide.pdf) · [Research guide](docs/student-starter-guide.pdf) · [Experiment Lab](docs/experiment-lab.md) · [Contributing](CONTRIBUTING.md)
 
 </div>
 
@@ -84,6 +84,8 @@ To install manually, create a Python 3.12+ `.venv`, install `pip install -e 'bac
 A useful first question is:
 
 > **Can a classifier distinguish eyes-open from eyes-closed trials in a separate recording from the same participant, better than chance?**
+
+Follow the [eyes-open vs eyes-closed experiment guide (PDF)](docs/eyes-open-closed-experiment-guide.pdf) for step-by-step trial collection, labelling, separate training/test recordings and a results worksheet. It is written for a two-student team using Experiment Lab.
 
 Use the [two-page student starter guide](docs/student-starter-guide.pdf) for clickable introductory reading and a first-week plan. Work together on the basics, split the biology/hardware and maths/analysis reading, then teach it back to each other.
 

@@ -1,0 +1,19 @@
+.student-help { padding: 4px 0; }
+.student-help__heading { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 20px; color: var(--accent); }
+.student-help__heading h2 { margin: 0 0 5px; font-size: 24px; }
+.student-help__heading p { margin: 0; }
+.student-help__guides { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.student-help__guide { display: flex; flex-direction: column; padding: 22px; }
+.student-help__guides > .student-help__guide { align-self: stretch; }
+.student-help__guide h3 { margin: 9px 0 0; font-size: 19px; }
+.student-help__guide p { flex: 1; }
+.student-help__format { color: var(--muted); font-size: 12px; }
+.student-help__guide a { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; padding: 9px 0; font-weight: 600; text-underline-offset: 3px; }
+.student-help a:focus-visible { outline: 3px solid var(--accent); outline-offset: 5px; border-radius: 3px; }
+.student-help__notes { padding: 16px 22px; margin-top: 16px; }
+.student-help__notes p:first-child { margin-top: 0; }
+.student-help__notes a { display: inline-flex; align-items: center; gap: 6px; text-underline-offset: 3px; }
+@media (max-width: 800px) {
+  .student-help__guides { grid-template-columns: 1fr; }
+  .student-help__guide { padding: 18px; }
+}

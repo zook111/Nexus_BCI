@@ -1,6 +1,6 @@
 # Experiment Lab
 
-Nexus BCI is created and maintained by **[zook111](https://github.com/zook111)**.
+Nexus BCI is a local EEG workspace for education and research.
 
 A local school-research module for collecting labelled EEG trials and comparing tasks with a pyRiemann classifier. Task labels mean **what the participant was instructed to do**, not verified thoughts, focus, relaxation or clinical states.
 

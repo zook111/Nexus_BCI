@@ -4604,7 +4604,7 @@ function App() {
         </aside>
       </section>
       <footer className="app-attribution">
-        Nexus BCI · created by <a href="https://github.com/zook111" target="_blank" rel="noreferrer">zook111</a> · MIT software
+        Nexus BCI · local EEG exploration · MIT software
       </footer>
     </main>
   )

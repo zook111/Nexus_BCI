@@ -1,6 +1,6 @@
 # Feedback Demo Next Tasks
 
-Nexus BCI is created and maintained by **[zook111](https://github.com/zook111)**.
+Nexus BCI is a local EEG workspace for education and research.
 
 These are the highest-value next tasks while hardware testing is paused. They keep the product non-clinical and focus on transparent signal feedback that can be exercised with the BrainFlow synthetic board or saved recordings.
 

@@ -27,6 +27,24 @@ def test_unrelated_http_origin_cannot_trigger_board_actions(monkeypatch, origin)
     stop.assert_not_called()
 
 
+def test_same_origin_api_docs_can_call_actions_at_custom_local_port(monkeypatch):
+    stop = Mock(return_value=main.board_service.state())
+    monkeypatch.setattr(main.board_service, "stop_stream", stop)
+    client = TestClient(main.app, base_url="http://127.0.0.1:8123")
+    response = client.post("/api/board/stop", headers={"Origin": "http://127.0.0.1:8123"})
+    assert response.status_code == 200
+    stop.assert_called_once()
+
+
+@pytest.mark.parametrize("origin", ["http://127.0.0.1:8124", "https://127.0.0.1:8123"])
+def test_api_origin_requires_matching_scheme_and_port(monkeypatch, origin):
+    stop = Mock()
+    monkeypatch.setattr(main.board_service, "stop_stream", stop)
+    client = TestClient(main.app, base_url="http://127.0.0.1:8123")
+    assert client.post("/api/board/stop", headers={"Origin": origin}).status_code == 403
+    stop.assert_not_called()
+
+
 @pytest.mark.parametrize(
     "origin", [None, "http://localhost:5173", "http://127.0.0.1:5179"]
 )

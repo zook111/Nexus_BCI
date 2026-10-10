@@ -1,7 +1,6 @@
 [project]
 name = "mindmeld-api"
 version = "0.1.0"
-authors = [{name = "zook111"}]
 license = "MIT"
 description = "Backend API for OpenBCI acquisition, processing, and realtime UI streaming."
 requires-python = ">=3.12"

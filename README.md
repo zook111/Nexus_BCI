@@ -1,39 +1,34 @@
 <div align="center">
 
-<img src="frontend/public/nexus-symbol.svg" width="76" alt="Nexus signal logo" />
+<img src="frontend/public/nexus-symbol.svg" width="80" alt="Nexus signal logo" />
 
-# Nexus
+# Nexus BCI
 
-### Your local workspace for EEG, experiments and discovery.
+### Your EEG science project starts here.
 
-**Acquire signals · Label trials · Test a classifier · Learn the maths**
+Record signals. Label experiments. Test a classifier. Understand the maths.
 
-Created by **[zook111](https://github.com/zook111)**
-
-[Get started](#get-started-on-macos) · [Experiment Lab](docs/experiment-lab.md) · [Student starter guide](docs/student-starter-guide.pdf) · [Contribute](CONTRIBUTING.md) · [Security & privacy](SECURITY.md)
+[Start here](#start-here) · [Student guide](docs/student-starter-guide.pdf) · [Experiment Lab](docs/experiment-lab.md) · [Contributing](CONTRIBUTING.md)
 
 </div>
 
-![Nexus acquisition console showing synthetic EEG](docs/images/nexus-console.jpg)
+![Nexus console showing synthetic EEG signals](docs/images/nexus-console.jpg)
 
-Nexus connects an OpenBCI Cyton or Cyton Daisy to a readable, hands-on EEG workspace. Watch waveforms and electrode quality together, record locally, run guided trials, and evaluate a small classifier on a separate test recording. An interactive lesson explains the journey from filtered signals to covariance matrices, Riemannian tangent-space features and logistic regression.
+Nexus is a local workspace for exploring EEG with an OpenBCI headset. It brings live waveforms, electrode quality, labelled trials and a small machine-learning classifier into one app, with an interactive maths lesson to explain what happens along the way.
 
-**No headset yet? Start with the built-in synthetic board. No API key, GPU or cloud inference is needed.**
+**No headset yet? You can explore the app and learn the maths using its synthetic board. No API key or GPU is required.**
 
-> Nexus is an experimental education and signal-exploration tool. It is not a medical device, a mind reader, or a validated measure of stress, attention or relaxation. Task labels describe instructions, not proven mental states. Screenshots use synthetic signals.
+> This is experimental education and research software. Task labels describe instructions, not verified thoughts, focus or relaxation. Synthetic signals are a software rehearsal; they are not evidence of brain-state classification. Nexus provides no clinical interpretation.
 
-## Four workspaces, one signal
+## Start here
 
-| Workspace | What you can do |
-| --- | --- |
-| **Console** | Connect a board, inspect live traces and per-electrode quality, adjust DSP, record CSVs, replay sessions and export calibration markers. |
-| **Experiment Lab** | Follow visual and spoken task cues, automatically label trials, review or exclude artefacts, and train/evaluate locally with pyRiemann. |
-| **Interactive maths lesson** | Explore frequencies, covariance, tangent coordinates and the sigmoid with linked sliders, worked examples and a knowledge check. Open it from Experiment Lab. |
-| **Feedback Lab / Doctor Demo** | Explore optional visual and audio feedback. Signal-quality gates pause interpretation when the data is unreliable. |
+### 1. Get the essentials
 
-## Get started on macOS
+For the recommended setup, use **macOS 13.5 or later**, **Python 3.12+**, **Node 24** and **Git**. Install Python from [python.org](https://www.python.org/downloads/macos/) and Node from [nodejs.org](https://nodejs.org/en/download). Node's [platform requirements](https://github.com/nodejs/node/blob/v24.x/BUILDING.md#platform-list) explain the macOS minimum.
 
-You need **Git**, **Python 3.12+**, and a supported even-numbered **Node.js** version. The recommended **Node 24** setup requires **macOS 13.5 or later** on Intel or Apple Silicon, as documented in [Node's platform requirements](https://github.com/nodejs/node/blob/v24.x/BUILDING.md#platform-list). Older macOS versions need a different compatibility plan. Install Python from [python.org](https://www.python.org/downloads/macos/) and Node from [nodejs.org](https://nodejs.org/en/download); if you use nvm, run `nvm install && nvm use` after cloning.
+If you use nvm, run `nvm install && nvm use` after cloning. Intel Mac and physical-headset installation still need independent validation; the services are also tested in Linux CI. The desktop launcher is macOS-specific.
+
+### 2. Install Nexus
 
 ```bash
 git clone https://github.com/zook111/Nexus_BCI.git nexus
@@ -42,31 +37,22 @@ cd nexus
 ./script/install_desktop_launcher.sh
 ```
 
-Open **Nexus Server** from your Desktop. It starts the local API and web interface, then opens [localhost:5173](http://localhost:5173). Open the app again to stop its processes. Keep the checkout in place: the launcher points to it. Reinstalling archives this checkout's old **Mindmeld Server** launcher in the Trash so only the Nexus app remains on the Desktop.
+Open **Nexus Server** on your Desktop. It starts the local services and opens [localhost:5173](http://localhost:5173). Open it again to stop them. Keep the checkout in place: the launcher points to it.
 
-This public repository starts from a clean source snapshot. Internal Python package names and existing `MINDMELD_*` settings remain compatible with earlier Nexus installations.
+Reinstallation makes recoverable backups. A legacy Mindmeld launcher is retired only when it belongs to this checkout. Internal `mindmeld_api` imports and `MINDMELD_*` settings remain compatible with earlier installations.
 
-### Your first stream — no hardware required
+### 3. See your first signal
 
-1. Choose **Console**, leave **Board → Synthetic**, and click **Connect**, then **Start**.
-2. Watch live traces, channel quality and the DSP summary. Synthetic signals test the software, not a participant or a classifier's brain-decoding accuracy.
-3. Enter a session label, click **Record**, then **Save**. Preview or download the recording in **Telemetry**.
-4. Open **Experiment Lab → How the classifier works** for the interactive lesson. To collect labelled trials, follow the [Experiment Lab guide](docs/experiment-lab.md).
-5. Use **Stop** to stop the stream and **Reset** to release the board.
+1. Open **Console**, choose **Synthetic**, and click **Connect**, then **Start**.
+2. Watch the waveforms, per-channel quality and frequency-band summary.
+3. Enter a session label, click **Record**, then **Save**. Preview or download the CSV under **Telemetry**.
+4. Open **Experiment Lab → How the classifier works**. The lesson works without a headset or any participant recording.
+5. Use **Stop** to stop acquisition and **Reset** to release the board.
 
 <details>
-<summary><strong>Manual setup and developer commands</strong></summary>
+<summary><strong>Prefer two development terminals?</strong></summary>
 
-From the repository root:
-
-```bash
-python3.12 -m venv .venv
-.venv/bin/python -m pip install --upgrade pip setuptools wheel
-.venv/bin/python -m pip install -e 'backend[dev]'
-npm ci --prefix frontend
-```
-
-Run these in two terminals:
+After setup, run these from the repository root:
 
 ```bash
 # Terminal 1: API at http://127.0.0.1:8000
@@ -79,79 +65,106 @@ Run these in two terminals:
 npm run dev --prefix frontend -- --host 127.0.0.1 --port 5173
 ```
 
-Interactive API documentation: [127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+API documentation: [127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
 
-The macOS launcher also supports `./script/build_and_run.sh --status`, `--verify`, `--logs`, `--start` and `--stop`. Existing installations retain their state and logs in `~/Library/Application Support/Mindmeld Launcher`.
-
-The Python/React services are portable; CI runs on Linux. The desktop launcher is macOS-specific. Windows and Intel Mac end-to-end installs still need separate validation.
+To install manually, create a Python 3.12+ `.venv`, install `pip install -e 'backend[dev]'` inside it, and run `npm ci --prefix frontend`. The setup script performs these steps for you without installing global Python packages.
 
 </details>
 
-## Connect an OpenBCI headset
+## Turn it into a school project
 
-Use a **Cyton (8 channels)** or **Cyton Daisy (16 channels)** with the OpenBCI USB dongle. A USB-C adapter may be needed on newer laptops. Follow OpenBCI's own hardware setup and electrical-safety instructions before using the headset.
+A useful first question is:
 
-Select the board and its recommended USB serial port, then **Connect → Start**. On macOS, prefer `/dev/cu.*` ports. Nexus ranks likely OpenBCI candidates; generic FTDI and Bluetooth ports are not proof of a supported board. Hardware connection is manual by default. For an explicitly trusted dongle, see [configuration](#configuration).
+> **Can a classifier distinguish eyes-open from eyes-closed trials in a separate recording from the same participant, better than chance?**
 
-Check that timestamps advance and that the selected electrodes have several consecutive usable quality windows before recording experimental trials. Fix reference/bias contact and electrode seating before relying on filtered traces. The default mains notch is **50 Hz**; change it to **60 Hz** in a 60 Hz region.
+Use the [two-page student starter guide](docs/student-starter-guide.pdf) for clickable introductory reading and a first-week plan. Work together on the basics, split the biology/hardware and maths/analysis reading, then teach it back to each other.
 
-## Experiments you can reproduce
+| Stage | What to do | What to keep |
+| --- | --- | --- |
+| **Rehearse** | Practise recording and labelling with synthetic signals. | A checklist of steps and questions. |
+| **Plan** | Agree instructions, controls, quality/exclusion rules and participant codes with your teacher. | A one-page method written before collecting data. |
+| **Collect** | Record balanced, guided trials in Experiment Lab; review labels and exclusions. | Raw CSV, annotations and notes. |
+| **Test** | Train on one recording, then evaluate a separate, untouched recording from the same participant. | Confusion matrix, balanced accuracy, chance benchmark and rejected-trial reasons. |
+| **Explain** | Discuss noise, artefacts, sample size and what your result does or does not establish. | A reproducible report, including weak or negative results. |
 
-![Nexus interactive classifier lesson](docs/images/nexus-lesson.jpg)
+Start with manageable sessions and breaks. The guide suggests aiming initially for 20 trials per task; minimum accepted trial counts in the software are operating limits, not a guarantee of a strong experiment. Swap operator/participant roles, keeping each participant's training and test data separate and correctly coded.
 
-Start with an eyes-open/eyes-closed protocol, or investigate left/right hand imagery with appropriately placed electrodes. Nexus supports two to four task labels, balanced guided trials, editable annotations and explicit exclusions.
+Read the [Experiment Lab method and limitations](docs/experiment-lab.md) before using participant data. Eyes-open/closed and left/right hand-imagery presets are available, along with two to four custom task labels. Motor imagery is an investigation, not a promised capability.
 
-The fixed classification pipeline is:
+## Learn what the classifier is doing
 
-```text
-Filtered EEG → OAS channel covariance → Riemannian tangent space → logistic regression
+![Interactive Nexus covariance lesson using invented data](docs/images/nexus-lesson.jpg)
+
+```mermaid
+flowchart LR
+    A[Filtered EEG] --> B[Channel covariance]
+    B --> C[Riemannian tangent-space features]
+    C --> D[Logistic regression]
 ```
 
-Train on one recording and evaluate on another, with matching participant code, channels, sample rate and task labels. Feature fitting uses training data only. Reports include balanced accuracy, chance level, a confusion matrix, per-trial probabilities, rejected-trial reasons, file hashes and package versions.
+The lesson explains frequencies, means, covariance, logarithms, the sigmoid and fair testing through linked sliders and worked examples. Matrix details are optional extension material.
 
-Accuracy depends on the participant, electrode placement, artefacts, timing and the protocol. Motor imagery is an investigation, not a promised capability. The app evaluates saved trials; it does not yet provide a persistent live classifier. Read the [method and limitations](docs/experiment-lab.md) before designing a school study.
+The real classifier uses OAS-shrinkage covariance with pyRiemann and scikit-learn logistic regression. All feature fitting uses training data only. Reports include file hashes, method settings, package versions and per-trial predictions. Probabilities are not calibrated confidence. The current module evaluates saved trials; it does not deploy a persistent classifier for live device control.
 
-## Your data stays with you
+## Find your workspace
 
-Raw EEG, metadata, annotations and reports are saved locally under `recordings/`; demo-room data lives under `data/`. Both are ignored by Git. Nothing in the classification pipeline uploads recordings. Unrelated browser origins are rejected by the local HTTP API and EEG WebSocket. This is not authentication against software running on your computer. Use anonymous participant codes, obtain appropriate permission, and keep exports out of public issues and commits.
+| Workspace | Purpose |
+| --- | --- |
+| **Console** | Acquisition, raw traces, quality checks, DSP, recordings, replay and calibration markers. |
+| **Experiment Lab** | Guided task cues, balanced labels, trial review, separate training/test data and the maths lesson. |
+| **Feedback Lab** | Optional visual and audio feedback that pauses when signal quality is inadequate. |
+| **Doctor Demo** | Eyes-open/closed demonstrations and confidence-gated group experiences. Non-clinical throughout. |
 
-Browser speech is available for task cues. Optional Cartesia speech sends cue text to that provider and requires a local API key. No key is needed for normal acquisition, classification or the lesson. See [Security & privacy](SECURITY.md) for the API's local-only trust boundary.
+## Connect the headset
 
-## Configuration
+Nexus supports **Cyton, 8 channels**, and **Cyton Daisy, 16 channels**, with the OpenBCI USB dongle. Follow the manufacturer's [Cyton guide](https://docs.openbci.com/GettingStarted/Boards/CytonGS/) and hardware/electrical-safety instructions. USB-C laptops may need an adapter.
 
-Defaults work without an environment file. For optional backend settings:
+Select the correct board and recommended serial port, then **Connect → Start**. On macOS, prefer `/dev/cu.*` ports. Hardware connection is manual by default. A generic FTDI or Bluetooth port does not prove that the right board is attached.
 
-```bash
-cp backend/.env.example .env
-```
+Before collecting trials, check advancing timestamps and several consecutive usable quality windows. Secure electrode/reference contacts and review artefacts. Filtering cannot repair a disconnected contact. Mains filtering defaults to **50 Hz**; adjust it in a 60 Hz region.
 
-Set `CARTESIA_API_KEY` locally only if you want optional hosted cue speech. Never commit `.env` or place secrets in `VITE_*` frontend settings.
+## Keep your data local
+
+Recordings, labels and reports stay under `recordings/`; demo-room data stays under `data/`. Git ignores both, along with common EEG exports, local credentials and generated model files. Use participant codes and obtain appropriate permission. Do not put participant data in issues or PRs.
+
+Classification does not upload recordings. Optional Cartesia calibration speech sends cue text to that provider; browser speech is available as a fallback. Bundled audio plays locally. All screenshots and lesson examples use synthetic signals.
+
+The API is for trusted local use. It binds to loopback through the launcher and validates browser origins for HTTP and WebSocket requests. Origin checks are not authentication against other local processes. See [security and privacy](SECURITY.md).
+
+<details>
+<summary><strong>Optional settings</strong></summary>
+
+Defaults work without an environment file. For backend options, copy `backend/.env.example` to `.env`. Keep credentials out of `VITE_*` settings: those values become public frontend JavaScript.
 
 | Setting | Purpose |
 | --- | --- |
 | `MINDMELD_RECORDING_DIR` | Local recording storage; default `recordings`. |
 | `MINDMELD_DEMO_DB_PATH` | Local demo database; default `data/mindmeld_demo.sqlite3`. |
-| `CARTESIA_API_KEY` / `MINDMELD_CARTESIA_API_KEY` | Optional hosted calibration voice; blank uses the browser fallback. |
+| `CARTESIA_API_KEY` / `MINDMELD_CARTESIA_API_KEY` | Optional hosted calibration speech. Blank uses the fallback. |
 | `VITE_API_BASE_URL` | Frontend API URL; default `http://localhost:8000`. |
-| `VITE_OPENBCI_AUTOCONNECT_BOARD` | Required alongside the serial for auto-connect: `cyton` or `cyton_daisy`. Blank or invalid keeps setup manual. |
 | `VITE_OPENBCI_AUTOCONNECT_SERIAL` | Optional known dongle serial in `frontend/.env.local`; requires the board setting below. |
+| `VITE_OPENBCI_AUTOCONNECT_BOARD` | `cyton` or `cyton_daisy`. Both values are required for auto-connect; missing/invalid board settings keep setup manual. |
 
-## Troubleshooting
+</details>
 
-| Symptom | Next step |
+## If something is not working
+
+| Symptom | Try this |
 | --- | --- |
-| Installer reports an unsupported Python or Node | Check `python3.12 --version` and `node --version`. Use `NEXUS_PYTHON=/path/to/python ./script/setup.sh` for a specific interpreter; `nvm use` selects the repo's Node line. |
-| Port 8000 or 5173 is occupied | Stop the application that owns it or use different development ports. Nexus does not terminate unrelated listeners. |
-| No USB port | Check the dongle, adapter and operating-system permissions. Refresh ports; use Synthetic to verify the app independently. |
-| `BOARD_NOT_READY_ERROR:7` | Check board power/radio mode, release the serial port, wait a few seconds, then Reset and reconnect. |
-| Stream appears frozen or the board session is lost | Check advancing timestamps. Reset, let the dongle settle, then Connect and Start. |
-| High noise or many bad channels | Secure reference/bias and electrode contacts, run the laptop on battery and move leads away from power supplies. Filtering cannot repair a disconnected electrode. |
-| No spoken cues | Browser speech availability varies. Visual cues remain available; audio starts after a user interaction. |
+| Setup rejects Python or Node | Check versions. Use Node 24 and Python 3.12+. `NEXUS_PYTHON=/path/to/python ./script/setup.sh` selects an interpreter. |
+| Port 8000 or 5173 is occupied | Stop the application that owns it. Nexus does not kill unrelated listeners. |
+| No suitable USB port | Check the dongle and adapter, then Refresh. Use Synthetic to test the software separately. |
+| `BOARD_NOT_READY_ERROR:7` | Check board power/radio mode. Release the port, wait a few seconds, then Reset and reconnect. |
+| Frozen samples or a lost session | Check timestamps; Reset, let the dongle settle, then Connect and Start. |
+| Noisy channels | Secure reference/bias and electrode contacts, keep leads away from power supplies, and try the laptop on battery. |
+| No spoken cue | Visual instructions remain available. Browser speech support varies; audio requires a user interaction. |
 
-## Built for inspection
+For launcher diagnostics, use `./script/build_and_run.sh --status`, `--verify` or `--logs`. Legacy-compatible logs remain under `~/Library/Application Support/Mindmeld Launcher`.
 
-React + TypeScript + Vite on the frontend; Python + FastAPI + BrainFlow + NumPy/SciPy on the backend; pyRiemann + scikit-learn for local classification. Live samples use WebSockets. The console exposes DSP and quality measurements alongside the waveforms.
+## Built for learning and inspection
 
-[Contributing](CONTRIBUTING.md) explains checks and development conventions. [Project status](project_status.md) records what is verified and what remains. [Public-release checklist](docs/public-release.md) distinguishes code hygiene from publication readiness.
+React, TypeScript and Vite provide the interface; Python, FastAPI, BrainFlow and NumPy/SciPy handle acquisition and analysis; pyRiemann and scikit-learn provide classification. Live samples use WebSockets.
 
-**Licence and attribution:** Nexus software and original brand assets are released under the [MIT licence](LICENSE), copyright 2026 [zook111](https://github.com/zook111). Bundled generated audio has separate [media notices](MEDIA.md); the maintainer has confirmed redistribution rights. Third-party dependencies retain their own licences.
+See [Contributing](CONTRIBUTING.md) for checks, [project status](project_status.md) for verified behavior and remaining platform tests, and [release verification](docs/public-release.md) for publication checks.
+
+**Licence:** [MIT](LICENSE) for software, documentation and original brand assets. Bundled generated audio has separate [media notices](MEDIA.md). Dependencies retain their upstream licences.

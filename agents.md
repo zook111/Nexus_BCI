@@ -133,7 +133,7 @@ Do not start baseline capture or call a setup calibrated while timestamps are st
 
 ## Public repository conventions
 
-- Repository: `https://github.com/zook111/Nexus_BCI`. Maintainer and original author: **zook111**.
+- Repository: `https://github.com/zook111/Nexus_BCI`. Keep individual contributor credit in Git commit authorship.
 - Preserve MIT notices and the separate generated-media notice.
 - Keep browser Origin checks on HTTP and WebSocket requests; Origin validation does not replace authentication.
 - Add only reviewed, non-participant documents under `docs/`; generated scratch files belong in ignored `output/`, `tmp/`, `data/` or `exports/`.

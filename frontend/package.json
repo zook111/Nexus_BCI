@@ -39,7 +39,6 @@
     "vite": "^8.3.2",
     "vitest": "^4.1.11"
   },
-  "author": "zook111",
   "license": "MIT",
   "homepage": "https://github.com/zook111/Nexus_BCI",
   "repository": {

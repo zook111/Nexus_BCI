@@ -1,6 +1,6 @@
 # Nexus identity
 
-Nexus is a local EEG instrument and learning workspace, created by zook111.
+Nexus is a local EEG instrument and learning workspace, designed for students and researchers.
 
 **Design read:** overhaul the visual identity of an operational console for students and researchers viewing a laptop at normal working distance. The work panels remain dense and quiet; a contrasting instrument header gives the product a clear identity.
 

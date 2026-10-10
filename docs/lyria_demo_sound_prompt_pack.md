@@ -1,6 +1,6 @@
 # Lyria Demo Sound Prompt Pack
 
-Nexus BCI is created and maintained by **[zook111](https://github.com/zook111)**.
+Nexus BCI is a local EEG workspace for education and research.
 
 This prompt pack is for generating optional source loops for Nexus Feedback Lab demos with Gemini/Lyria 3. The app has a confidence-gated Web Audio ambient pad, guided calibration cue audio, and a small bundled set of generated demo loops that can be selected from the Feedback Lab Ambient pad card.
 

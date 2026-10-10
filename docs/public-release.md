@@ -1,12 +1,12 @@
 # Public release and verification
 
-Nexus BCI is created and maintained by **zook111** and published at [zook111/Nexus_BCI](https://github.com/zook111/Nexus_BCI).
+Nexus BCI is published at [zook111/Nexus_BCI](https://github.com/zook111/Nexus_BCI).
 
 ## Initial publication
 
 This repository starts from a reviewed source snapshot, not a copied development Git directory. It does not import the previous development history, closed-PR discussions, local agent configuration, environment files, logs, recordings or participant exports.
 
-The software licence is **MIT**, copyright **2026 zook111**. The maintainer confirmed redistribution permission for the bundled generated audio on **10 October 2026**; [MEDIA.md](../MEDIA.md) records its separate provenance and scope. Original branding and synthetic screenshots accompany the software.
+The software licence is **MIT**, copyright **2026 Nexus BCI contributors**. The maintainer confirmed redistribution permission for the bundled generated audio on **10 October 2026**; [MEDIA.md](../MEDIA.md) records its separate provenance and scope. Original branding and synthetic screenshots accompany the software.
 
 ## What is checked
 
@@ -22,7 +22,7 @@ Scanner success does not prove absence of every secret or private detail. Binary
 
 1. Run the backend, frontend and native checks appropriate to the change. Record the exact revision and tested platforms.
 2. Scan staged files and history for credentials and private material. Review new media and screenshots manually.
-3. Confirm media provenance and redistribution rights. Preserve zook111 attribution and licence notices.
+3. Confirm media provenance and redistribution rights. Preserve copyright and licence notices.
 4. Update the README, student guide, current project status and platform limitations.
 5. Review the PR, resolve comments, and allow at least five minutes on the latest revision before merging.
 

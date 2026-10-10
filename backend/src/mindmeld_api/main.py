@@ -54,7 +54,7 @@ experiment_service = ExperimentService(board_service, settings.recording_dir)
 app = FastAPI(
     title="Nexus API",
     version=__version__,
-    contact={"name": "zook111", "url": "https://github.com/zook111"},
+    contact={"name": "Nexus BCI", "url": "https://github.com/zook111/Nexus_BCI"},
     license_info={"name": "MIT", "url": "https://github.com/zook111/Nexus_BCI/blob/main/LICENSE"},
 )
 app.include_router(experiment_router(lambda: experiment_service))

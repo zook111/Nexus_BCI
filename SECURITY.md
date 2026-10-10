@@ -6,6 +6,6 @@ Recordings, labels and reports stay in the configured local recording directory.
 
 No API key is needed for acquisition, classification or the maths lesson. Optional Cartesia speech sends cue text to Cartesia; browser speech is the fallback. Never put a secret into a `VITE_*` variable: frontend variables are embedded in downloadable JavaScript. The optional auto-connect serial is device configuration, not a credential.
 
-If you find a vulnerability or accidentally committed credential, use [GitHub private vulnerability reporting](https://github.com/zook111/Nexus_BCI/security/advisories/new) to contact maintainer **zook111**. Do not post credentials or participant recordings in an issue. If GitHub private vulnerability reporting is enabled, use the repository's **Security → Report a vulnerability** page.
+If you find a vulnerability or accidentally committed credential, use [GitHub private vulnerability reporting](https://github.com/zook111/Nexus_BCI/security/advisories/new) to contact the project maintainer. Do not post credentials or participant recordings in an issue. If GitHub private vulnerability reporting is enabled, use the repository's **Security → Report a vulnerability** page.
 
 Rotate an exposed credential before removing it from source. A deletion does not remove Git history, pull-request diffs, clones or caches. The repository runs Gitleaks on pull requests and main; automated scanning reduces risk but cannot prove the absence of every secret or private detail.

@@ -1,6 +1,6 @@
 # Nexus UI
 
-React/Vite frontend for the local Nexus EEG workspace, created by [zook111](https://github.com/zook111).
+React/Vite frontend for the local Nexus EEG workspace.
 
 Use the [root README](../README.md) for installation and the first synthetic stream. With a supported Node version (Node 24 recommended):
 

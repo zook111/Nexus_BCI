@@ -206,17 +206,17 @@ def test_native_loss_and_failed_metadata_write_still_pause_websocket_and_retry_o
     with service._lock:
         worker = service._request_recording_stop_locked()
     worker.join(timeout=2)
-    original_write = Path.write_text
+    original_replace = Path.replace
     target = Path(started.metadata_path)
 
-    def unavailable(path, *args, **kwargs):
-        if path == target:
+    def unavailable(path, destination):
+        if destination == target:
             raise OSError("disk full")
-        return original_write(path, *args, **kwargs)
+        return original_replace(path, destination)
 
     monkeypatch.setattr(main, "board_service", service)
     with monkeypatch.context() as storage:
-        storage.setattr(Path, "write_text", unavailable)
+        storage.setattr(Path, "replace", unavailable)
         service._board.release_session()
         with TestClient(main.app).websocket_connect("/ws/stream") as socket:
             first = socket.receive_json()

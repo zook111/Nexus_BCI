@@ -18,19 +18,19 @@ def test_initial_metadata_failure_rolls_back_recording_and_retry_starts_writer(
     service = BrainFlowBoardService(tmp_path)
     service.connect(BoardConnectionRequest(board=BoardKind.synthetic))
     service.start_stream()
-    original_write = Path.write_text
+    original_replace = Path.replace
     attempted_metadata = []
 
-    def partial_metadata_failure(path, *args, **kwargs):
-        if path.parent == tmp_path and path.suffix == ".json":
-            attempted_metadata.append(path)
-            original_write(path, "partial metadata")
+    def partial_metadata_failure(path, target):
+        if target.parent == tmp_path and target.suffix == ".json":
+            attempted_metadata.append(target)
+            path.write_text("partial metadata")
             raise OSError("disk full")
-        return original_write(path, *args, **kwargs)
+        return original_replace(path, target)
 
     try:
         with monkeypatch.context() as storage:
-            storage.setattr(Path, "write_text", partial_metadata_failure)
+            storage.setattr(Path, "replace", partial_metadata_failure)
             with pytest.raises(OSError, match="disk full"):
                 service.start_recording(RecordingStartRequest(label="Synthetic initialization"))
         assert attempted_metadata

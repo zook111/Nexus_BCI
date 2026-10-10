@@ -82,14 +82,14 @@ def test_disconnect_flush_storage_failure_still_releases_native_owner(
 
         monkeypatch.setattr(Path, "open", fail_append)
     else:
-        original_write = Path.write_text
+        original_replace = Path.replace
 
-        def fail_metadata(path, *args, **kwargs):
-            if path == service._recording_metadata_path:
+        def fail_metadata(path, target):
+            if target == service._recording_metadata_path:
                 raise OSError("disk full")
-            return original_write(path, *args, **kwargs)
+            return original_replace(path, target)
 
-        monkeypatch.setattr(Path, "write_text", fail_metadata)
+        monkeypatch.setattr(Path, "replace", fail_metadata)
 
     with pytest.raises(OSError, match="disk full"):
         service.disconnect()

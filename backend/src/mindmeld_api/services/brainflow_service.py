@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from json import dumps, loads
 from pathlib import Path
 from re import sub
+from tempfile import NamedTemporaryFile
 from time import monotonic
 
 import numpy as np
@@ -569,7 +570,7 @@ class BrainFlowBoardService:
 
         recording = RecordingStateResponse(**loads(metadata_path.read_text()))
         updated = recording.model_copy(update={"label": request.label})
-        metadata_path.write_text(dumps(updated.model_dump(mode="json"), indent=2))
+        self._atomic_write_metadata(metadata_path, dumps(updated.model_dump(mode="json"), indent=2))
         return updated
 
     def delete_recording(self, session_id: str) -> None:
@@ -1784,7 +1785,20 @@ class BrainFlowBoardService:
             with self._lock:
                 if stop_event.is_set() or self._recording_session_id != session_id:
                     return
-                self._flush_recording_locked()
+                try:
+                    self._flush_recording_locked()
+                except OSError as exc:
+                    self._recording_message = (
+                        f"Recording stopped incomplete: storage failure: {exc}"
+                    )
+                    stop_event.set()
+                    try:
+                        self._finalize_recording_locked()
+                    except OSError as metadata_error:
+                        self._recording_message += (
+                            f". Final metadata could not be saved: {metadata_error}"
+                        )
+                    return
             if stop_event.wait(0.25):
                 return
 
@@ -1906,7 +1920,8 @@ class BrainFlowBoardService:
         if self._recording_metadata_path is None:
             return
         try:
-            self._recording_metadata_path.write_text(
+            self._atomic_write_metadata(
+                self._recording_metadata_path,
                 dumps(self._recording_state_locked().model_dump(mode="json"), indent=2)
             )
         except OSError:
@@ -1914,6 +1929,25 @@ class BrainFlowBoardService:
             raise
         else:
             self._recording_metadata_dirty = False
+
+    @staticmethod
+    def _atomic_write_metadata(path: Path, content: str) -> None:
+        temporary_path: Path | None = None
+        try:
+            with NamedTemporaryFile(
+                mode="w", encoding="utf-8", dir=path.parent,
+                prefix=f".{path.name}.", suffix=".tmp", delete=False,
+            ) as temporary_file:
+                temporary_path = Path(temporary_file.name)
+                temporary_file.write(content)
+            temporary_path.replace(path)
+        except Exception as exc:
+            if temporary_path is not None:
+                try:
+                    temporary_path.unlink(missing_ok=True)
+                except OSError as cleanup_error:
+                    exc.add_note(f"Could not remove temporary metadata: {cleanup_error}")
+            raise
 
     def _build_recording_session_id_locked(self, label: str | None) -> str:
         timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")

@@ -1,0 +1,9 @@
+# Stable text files across platforms; generated media stays byte-for-byte unchanged.
+* text=auto eol=lf
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.mp3 binary
+*.icns binary
+*.sh text eol=lf

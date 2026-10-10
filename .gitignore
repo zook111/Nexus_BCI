@@ -1,0 +1,81 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Node / frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.vite/
+coverage/
+
+# Environment and local config
+.env
+.env.*
+!.env.example
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# OpenBCI / session data
+recordings/
+data/
+exports/
+*.bdf
+*.edf
+*.parquet
+BrainFlow-RAW_*.csv
+OpenBCI-RAW_*.txt
+
+# Logs
+logs/
+*.log
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
+
+# Machine-local agent configuration and generated caches
+.claude/
+.superpowers/
+.codex/
+.ignore
+
+# Participant exports and local databases, wherever generated
+*.csv
+*.tsv
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db
+
+# Local worktrees, artifact scratch files, model outputs and credential files
+.worktrees/
+.graft/
+output/
+tmp/
+*.db-*
+*.sqlite-*
+*.jsonl
+*.pkl
+*.pickle
+*.joblib
+*.npz
+*.npy
+*.pem
+*.key
+credentials.json

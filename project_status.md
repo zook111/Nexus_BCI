@@ -8,6 +8,7 @@ Public repository: [zook111/Nexus_BCI](https://github.com/zook111/Nexus_BCI).
 - Nexus console, quality/DSP controls, recording/replay, guided calibration and confidence-gated demos.
 - Experiment Lab with labelled trials, separate training/test recordings and local pyRiemann classification.
 - Interactive A-level maths lesson and a shareable student starter PDF with clickable public links.
+- Three-page eyes-open/eyes-closed experiment PDF in `docs/`, linked from the README's top navigation and school-project section. The published guide includes reviewed local-mains-frequency instructions (50 Hz in the UK or 60 Hz where applicable), kept consistent across training and test.
 - MIT-licensed software, project copyright notices, and documented permission to redistribute generated audio.
 - Data/secret-safe ignores, contribution/security guidance and credential-scan CI.
 - HTTP/WebSocket browser-origin guard preserving configured local clients and native clients without Origin.

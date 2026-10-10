@@ -99,13 +99,16 @@ def marker_service(tmp_path, monkeypatch):
     board.is_prepared.return_value = True
     data = np.zeros((BoardShim.get_num_rows(-1), 3))
     data[BoardShim.get_timestamp_channel(-1)] = [1.0, 2.0, 3.0]
-    board.get_current_board_data.return_value = data
+    board.get_current_board_data.side_effect = (
+        lambda window: np.empty((0, 0)) if window == 1 else data
+    )
     service._board = board
     service._board_kind = BoardKind.synthetic
     service._board_id = -1
     service._status = BoardStatus.streaming
     monkeypatch.setattr(threading.Thread, "start", lambda _thread: None)
     service.start_recording(RecordingStartRequest(label="Synthetic marker timing"))
+    board.get_current_board_data.reset_mock()
     request = RecordingCalibrationMarkerRequest(
         step_id="eyes-closed", label="Eyes closed", cue="Close eyes"
     )

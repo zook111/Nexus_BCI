@@ -832,6 +832,20 @@ class BrainFlowBoardService:
             eeg_names = self._normalize_eeg_names(eeg_names, len(eeg_channels))
 
             try:
+                try:
+                    boundary_data = self._board.get_current_board_data(1)
+                except BrainFlowError as exc:
+                    self._recover_board_locked(str(exc))
+                    raise
+                timestamp_channel = self._safe_timestamp_channel_locked()
+                boundary_timestamp = None
+                if boundary_data.size:
+                    if timestamp_channel is None:
+                        raise RuntimeError("Board does not expose recording timestamps")
+                    boundary_timestamp = float(boundary_data[timestamp_channel][-1])
+                    if not np.isfinite(boundary_timestamp):
+                        raise RuntimeError("Board recording timestamp is not finite")
+                started_at = self._now()
                 with file_path.open("w", newline="") as csv_file:
                     writer(csv_file).writerow(["timestamp", *eeg_names])
 
@@ -839,10 +853,10 @@ class BrainFlowBoardService:
                 self._recording_label = request.label
                 self._recording_file_path = file_path
                 self._recording_metadata_path = metadata_path
-                self._recording_started_at = self._now()
+                self._recording_started_at = started_at
                 self._recording_stopped_at = None
                 self._recording_sample_count = 0
-                self._recording_last_timestamp = None
+                self._recording_last_timestamp = boundary_timestamp
                 self._recording_board = self._board_kind
                 self._recording_board_id = self._board_id
                 self._recording_sampling_rate = self._safe_sampling_rate_locked()

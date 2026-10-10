@@ -26,6 +26,8 @@ def recording_service(tmp_path, monkeypatch):
     board.is_prepared.return_value = True
 
     def read_data(_window):
+        if _window == 1:
+            return np.empty((0, 0))
         events.append("read")
         assert service._recording_stop_event.is_set()
         return data
@@ -40,6 +42,7 @@ def recording_service(tmp_path, monkeypatch):
     # Keep the recorder deterministic: the disconnect itself must persist the tail.
     monkeypatch.setattr(threading.Thread, "start", lambda _thread: None)
     service.start_recording(RecordingStartRequest(label="Synthetic reset tail"))
+    board.get_current_board_data.reset_mock()
     yield service, board, events, data
 
 

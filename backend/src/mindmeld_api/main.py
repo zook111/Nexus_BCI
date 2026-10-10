@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import sqlite3
+from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
@@ -51,11 +52,22 @@ board_service = BrainFlowBoardService(recording_dir=settings.recording_dir)
 demo_store: DemoStore | None = None
 experiment_service = ExperimentService(board_service, settings.recording_dir)
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    try:
+        yield
+    finally:
+        # Flush/finalize recordings before uvicorn exits on launcher SIGTERM.
+        await asyncio.to_thread(board_service.disconnect)
+
+
 app = FastAPI(
     title="Nexus API",
     version=__version__,
     contact={"name": "Nexus BCI", "url": "https://github.com/zook111/Nexus_BCI"},
     license_info={"name": "MIT", "url": "https://github.com/zook111/Nexus_BCI/blob/main/LICENSE"},
+    lifespan=lifespan,
 )
 app.include_router(experiment_router(lambda: experiment_service))
 app.add_middleware(

@@ -9,7 +9,7 @@ Describe the change and the problem it solves.
 - [ ] Native macOS checks pass when launcher behavior changes.
 - [ ] `project_status.md` is updated.
 - [ ] No participant data, credentials or private machine files are included.
-- [ ] Media provenance, redistribution permission and zook111 notices are preserved.
+- [ ] Media provenance, redistribution permission and copyright notices are preserved.
 
 ## Notes
 

@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +17,17 @@ class Settings(BaseSettings):
         ]
     )
     api_cors_origin_regex: str | None = r"http://(localhost|127\.0\.0\.1):517[3-9]"
+    frontend_port: int | None = Field(default=None, ge=1, le=65535)
+
+    @model_validator(mode="after")
+    def allow_launcher_frontend(self) -> "Settings":
+        if self.frontend_port is not None:
+            for host in ("localhost", "127.0.0.1"):
+                origin = f"http://{host}:{self.frontend_port}"
+                if origin not in self.api_cors_origins:
+                    self.api_cors_origins.append(origin)
+        return self
+
     recording_dir: Path = Path("recordings")
     demo_db_path: Path = Path("data/mindmeld_demo.sqlite3")
     websocket_interval_seconds: float = 0.1

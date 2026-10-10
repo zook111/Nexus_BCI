@@ -138,6 +138,7 @@ Defaults work without an environment file. For backend options, copy `backend/.e
 
 | Setting | Purpose |
 | --- | --- |
+| `MINDMELD_FRONTEND_PORT` | Optional launcher UI port; its loopback origins are allowed automatically. |
 | `MINDMELD_RECORDING_DIR` | Local recording storage; default `recordings`. |
 | `MINDMELD_DEMO_DB_PATH` | Local demo database; default `data/mindmeld_demo.sqlite3`. |
 | `CARTESIA_API_KEY` / `MINDMELD_CARTESIA_API_KEY` | Optional hosted calibration speech. Blank uses the fallback. |

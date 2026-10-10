@@ -256,7 +256,7 @@ start_services() {
 
   (
     cd "$ROOT_DIR" || exit 1
-    nohup "$python" -m uvicorn mindmeld_api.main:app \
+    MINDMELD_FRONTEND_PORT="$FRONTEND_PORT" nohup "$python" -m uvicorn mindmeld_api.main:app \
       --app-dir "$ROOT_DIR/backend/src" \
       --host 127.0.0.1 \
       --port "$BACKEND_PORT" >>"$BACKEND_LOG" 2>&1 9>&- &

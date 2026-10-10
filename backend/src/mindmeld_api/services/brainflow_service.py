@@ -830,35 +830,46 @@ class BrainFlowBoardService:
                 raise RuntimeError("Board does not expose EEG channels")
             eeg_names = self._normalize_eeg_names(eeg_names, len(eeg_channels))
 
-            with file_path.open("w", newline="") as csv_file:
-                writer(csv_file).writerow(["timestamp", *eeg_names])
+            try:
+                with file_path.open("w", newline="") as csv_file:
+                    writer(csv_file).writerow(["timestamp", *eeg_names])
 
-            self._recording_session_id = session_id
-            self._recording_label = request.label
-            self._recording_file_path = file_path
-            self._recording_metadata_path = metadata_path
-            self._recording_started_at = self._now()
-            self._recording_stopped_at = None
-            self._recording_sample_count = 0
-            self._recording_last_timestamp = None
-            self._recording_board = self._board_kind
-            self._recording_board_id = self._board_id
-            self._recording_sampling_rate = self._safe_sampling_rate_locked()
-            self._recording_eeg_channels = eeg_channels
-            self._recording_eeg_names = eeg_names
-            self._recording_setup_quality_snapshots = []
-            self._recording_calibration_markers = []
-            self._recording_message = None
-            self._recording_stop_event = threading.Event()
-            self._write_recording_metadata_locked()
+                self._recording_session_id = session_id
+                self._recording_label = request.label
+                self._recording_file_path = file_path
+                self._recording_metadata_path = metadata_path
+                self._recording_started_at = self._now()
+                self._recording_stopped_at = None
+                self._recording_sample_count = 0
+                self._recording_last_timestamp = None
+                self._recording_board = self._board_kind
+                self._recording_board_id = self._board_id
+                self._recording_sampling_rate = self._safe_sampling_rate_locked()
+                self._recording_eeg_channels = eeg_channels
+                self._recording_eeg_names = eeg_names
+                self._recording_setup_quality_snapshots = []
+                self._recording_calibration_markers = []
+                self._recording_message = None
+                self._recording_stop_event = threading.Event()
+                self._write_recording_metadata_locked()
 
-            self._recording_thread = threading.Thread(
-                target=self._recording_loop,
-                args=(session_id, self._recording_stop_event),
-                name=f"recording-{session_id}",
-                daemon=True,
-            )
-            self._recording_thread.start()
+                self._recording_thread = threading.Thread(
+                    target=self._recording_loop,
+                    args=(session_id, self._recording_stop_event),
+                    name=f"recording-{session_id}",
+                    daemon=True,
+                )
+                self._recording_thread.start()
+            except Exception as exc:
+                # Initialization must either publish a working recorder or roll back.
+                self._request_recording_stop_locked()
+                self._clear_recording_state_locked()
+                for artifact in (file_path, metadata_path):
+                    try:
+                        artifact.unlink(missing_ok=True)
+                    except OSError as cleanup_error:
+                        exc.add_note(f"Could not remove recording artifact: {cleanup_error}")
+                raise
             return self._recording_state_locked()
 
     def stop_recording(self, *, expected_session_id: str | None = None) -> RecordingStateResponse:

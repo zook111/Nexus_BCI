@@ -116,6 +116,7 @@ class BrainFlowBoardService:
         self._calm_calibration_posterior_labels = list(DEFAULT_CALM_POSTERIOR_LABELS)
         self._calm_calibration_values: list[float] = []
         self._calm_calibration_last_accept_monotonic: float | None = None
+        self._calm_calibration_last_source_timestamp: float | None = None
         self._calm_calibration_baseline_median: float | None = None
         self._calm_calibration_baseline_mad: float | None = None
         self._calm_calibration_message: str | None = None
@@ -413,6 +414,7 @@ class BrainFlowBoardService:
             self._calm_calibration_posterior_labels = list(request.posterior_labels)
             self._calm_calibration_values = []
             self._calm_calibration_last_accept_monotonic = None
+            self._calm_calibration_last_source_timestamp = None
             self._calm_calibration_baseline_median = None
             self._calm_calibration_baseline_mad = None
             self._calm_calibration_message = "Collecting usable calm-signal baseline windows"
@@ -505,6 +507,10 @@ class BrainFlowBoardService:
     ) -> RecordingStateResponse:
         with self._lock:
             if not self._recording_session_id or self._recording_stopped_at is not None:
+                raise RuntimeError("An active recording is required for calibration markers")
+
+            self._flush_recording_locked()
+            if self._recording_stopped_at is not None:
                 raise RuntimeError("An active recording is required for calibration markers")
 
             marker = RecordingCalibrationMarker(
@@ -1007,16 +1013,36 @@ class BrainFlowBoardService:
             self._calm_calibration_last_accept_monotonic is None
             or now - self._calm_calibration_last_accept_monotonic >= 0.5
         )
+        source_timestamp = feature.source_timestamp
+        source_advanced = (
+            source_timestamp is not None
+            and np.isfinite(source_timestamp)
+            and (
+                self._calm_calibration_last_source_timestamp is None
+                or source_timestamp > self._calm_calibration_last_source_timestamp
+            )
+        )
         if (
             feature.signal_state == CalmSignalState.usable
             and raw_index is not None
             and enough_time_since_accept
+            and source_advanced
         ):
             self._calm_calibration_values.append(raw_index)
             self._calm_calibration_last_accept_monotonic = now
+            self._calm_calibration_last_source_timestamp = source_timestamp
 
         elapsed_seconds = self._calm_calibration_elapsed_seconds_locked()
         if elapsed_seconds < self._calm_calibration_target_duration_seconds:
+            return
+
+        if not source_advanced:
+            self._calm_calibration_status = CalmCalibrationStatus.failed
+            self._calm_calibration_completed_at = self._now()
+            self._calm_calibration_elapsed_at_completion = elapsed_seconds
+            self._calm_calibration_message = (
+                "Baseline failed because signal timestamps stopped advancing"
+            )
             return
 
         if len(self._calm_calibration_values) < CALM_REQUIRED_BASELINE_WINDOWS:
@@ -1212,6 +1238,7 @@ class BrainFlowBoardService:
         self._calm_calibration_posterior_labels = list(DEFAULT_CALM_POSTERIOR_LABELS)
         self._calm_calibration_values = []
         self._calm_calibration_last_accept_monotonic = None
+        self._calm_calibration_last_source_timestamp = None
         self._calm_calibration_baseline_median = None
         self._calm_calibration_baseline_mad = None
         self._calm_calibration_message = None

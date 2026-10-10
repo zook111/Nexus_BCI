@@ -1,5 +1,6 @@
 import time
 from json import dumps
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -1018,7 +1019,7 @@ def test_calm_window_falls_back_to_last_four_channels_when_enabled() -> None:
     assert summary["calm_score"] is not None
 
 
-def test_calm_baseline_completes_with_accepted_windows() -> None:
+def test_calm_baseline_completes_with_accepted_windows(monkeypatch) -> None:
     service = BrainFlowBoardService()
     started = service.start_calm_baseline(
         CalmCalibrationStartRequest(duration_seconds=2, label="Eyes open")
@@ -1027,6 +1028,16 @@ def test_calm_baseline_completes_with_accepted_windows() -> None:
 
     service._calm_calibration_values = [0.1, 0.2, 0.3]
     service._calm_calibration_started_monotonic = time.monotonic() - 3
+    service._calm_calibration_last_accept_monotonic = time.monotonic()
+    monkeypatch.setattr(
+        service,
+        "_calm_feature_locked",
+        lambda **_kwargs: SimpleNamespace(
+            source_timestamp=1234.5,
+            signal_state=CalmSignalState.usable,
+            features={"raw_calm_index": 0.2},
+        ),
+    )
 
     completed = service.calm_baseline_state()
 
@@ -1036,11 +1047,21 @@ def test_calm_baseline_completes_with_accepted_windows() -> None:
     assert completed.baseline_mad is not None
 
 
-def test_calm_baseline_elapsed_time_freezes_after_completion() -> None:
+def test_calm_baseline_elapsed_time_freezes_after_completion(monkeypatch) -> None:
     service = BrainFlowBoardService()
     service.start_calm_baseline(CalmCalibrationStartRequest(duration_seconds=2))
     service._calm_calibration_values = [0.1, 0.2, 0.3]
     service._calm_calibration_started_monotonic = time.monotonic() - 3
+    service._calm_calibration_last_accept_monotonic = time.monotonic()
+    monkeypatch.setattr(
+        service,
+        "_calm_feature_locked",
+        lambda **_kwargs: SimpleNamespace(
+            source_timestamp=1234.5,
+            signal_state=CalmSignalState.usable,
+            features={"raw_calm_index": 0.2},
+        ),
+    )
 
     completed = service.calm_baseline_state()
     first_elapsed = completed.elapsed_seconds

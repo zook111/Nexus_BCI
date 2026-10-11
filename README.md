@@ -12,7 +12,7 @@ A local EEG science workspace for students and curious researchers.
 
 </div>
 
-![Dr K’s EEG Lab console showing simulated EEG signals](docs/images/eeg-lab-console.png)
+![Dr K’s EEG Lab console showing simulated EEG signals](docs/images/eeg-lab-console.jpg)
 
 Dr K’s EEG Lab is a local workspace for exploring EEG with an OpenBCI headset. It brings live waveforms, electrode quality, labelled trials and a small machine-learning classifier into one app, with an interactive maths lesson to explain what happens along the way.
 
@@ -105,7 +105,7 @@ Read the [Experiment Lab method and limitations](docs/experiment-lab.md) before 
 
 ## Learn what the classifier is doing
 
-![Dr K’s EEG Lab interactive covariance lesson using invented data](docs/images/eeg-lab-lesson.png)
+![Dr K’s EEG Lab interactive covariance lesson using invented data](docs/images/eeg-lab-lesson.jpg)
 
 ```mermaid
 flowchart LR
@@ -130,7 +130,7 @@ The real classifier uses OAS-shrinkage covariance with pyRiemann and scikit-lear
 
 Open **Help** in the app to find the setup, experiment and first-week research PDFs. They are bundled for offline reading and open in a separate tab.
 
-![Dr K’s EEG Lab Help section with student guide links](docs/images/eeg-lab-help.png)
+![Dr K’s EEG Lab Help section with student guide links](docs/images/eeg-lab-help.jpg)
 
 ## Connect the headset
 

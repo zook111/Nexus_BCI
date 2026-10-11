@@ -6,7 +6,7 @@ import './StudentHelp.css'
 
 const guides = [
   { title: 'Set up your Intel MacBook', format: '2-page PDF', href: setupGuideUrl,
-    description: 'Install on macOS Ventura, open Nexus and save your first simulated recording.',
+    description: 'Install on macOS Ventura, open the app and save your first simulated recording.',
     link: 'Open setup guide' },
   { title: 'Run your first experiment', format: '3-page PDF', href: experimentGuideUrl,
     description: 'Collect eyes-open and eyes-closed trials, check labels, and keep training and test recordings separate.',

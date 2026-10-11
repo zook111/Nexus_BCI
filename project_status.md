@@ -5,6 +5,7 @@ Public repository: [zook111/Nexus_BCI](https://github.com/zook111/Nexus_BCI).
 ## Initial public release
 
 - Visible app, browser and Doctor Demo title: **Dr K’s EEG Lab**, with “Explore signals. Run experiments. Learn the maths.” Nexus remains the project/repository and launcher name. Header and browser title were checked on desktop and a 375-pixel viewport, with no horizontal overflow or browser warnings.
+- README leads with **Dr K’s EEG Lab** and refreshed Console, covariance-lesson and Help screenshots captured from the current app using simulated data. Repository/launcher references remain explicitly named Nexus.
 
 - Clean source snapshot with no imported development Git history or participant data.
 - Nexus console, quality/DSP controls, recording/replay, guided calibration and confidence-gated demos.

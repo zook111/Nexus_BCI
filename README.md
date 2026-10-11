@@ -16,6 +16,8 @@ Record signals. Label experiments. Test a classifier. Understand the maths.
 
 Nexus is a local workspace for exploring EEG with an OpenBCI headset. It brings live waveforms, electrode quality, labelled trials and a small machine-learning classifier into one app, with an interactive maths lesson to explain what happens along the way.
 
+The app’s visible title is **Dr K’s EEG Lab**. Nexus remains the project name, including the **Nexus Server** desktop launcher.
+
 **No headset yet? You can explore the app and learn the maths using its synthetic board. No API key or GPU is required.**
 
 > This is experimental education and research software. Task labels describe instructions, not verified thoughts, focus or relaxation. Synthetic signals are a software rehearsal; they are not evidence of brain-state classification. Nexus provides no clinical interpretation.

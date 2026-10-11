@@ -3845,8 +3845,8 @@ function App() {
           <div className="brand-lockup">
             <img className="brand-symbol" src="/nexus-symbol.svg" alt="" width="48" height="48" />
             <div>
-              <h1 className="brand-logo">Nexus<span className="brand-edition">EEG WORKSPACE</span></h1>
-              <p>Acquire signals. Explore patterns. Understand the maths.</p>
+              <h1 className="brand-logo">Dr K’s EEG Lab<span className="brand-edition">EEG WORKSPACE</span></h1>
+              <p>Explore signals. Run experiments. Learn the maths.</p>
             </div>
           </div>
           <div className="topbar__status">

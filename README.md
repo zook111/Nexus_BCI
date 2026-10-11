@@ -1,26 +1,26 @@
 <div align="center">
 
-<img src="frontend/public/nexus-symbol.svg" width="80" alt="Nexus signal logo" />
+<img src="frontend/public/nexus-symbol.svg" width="80" alt="Nexus project signal mark" />
 
-# Nexus BCI
+# Dr K’s EEG Lab
 
-### Your EEG science project starts here.
+### Explore signals. Run experiments. Learn the maths.
 
-Record signals. Label experiments. Test a classifier. Understand the maths.
+A local EEG science workspace for students and curious researchers.
 
 [Start here](#start-here) · [First experiment (PDF)](docs/eyes-open-closed-experiment-guide.pdf) · [Research guide](docs/student-starter-guide.pdf) · [Experiment Lab](docs/experiment-lab.md) · [Contributing](CONTRIBUTING.md)
 
 </div>
 
-![Nexus console showing synthetic EEG signals](docs/images/nexus-console.jpg)
+![Dr K’s EEG Lab console showing simulated EEG signals](docs/images/eeg-lab-console.png)
 
-Nexus is a local workspace for exploring EEG with an OpenBCI headset. It brings live waveforms, electrode quality, labelled trials and a small machine-learning classifier into one app, with an interactive maths lesson to explain what happens along the way.
+Dr K’s EEG Lab is a local workspace for exploring EEG with an OpenBCI headset. It brings live waveforms, electrode quality, labelled trials and a small machine-learning classifier into one app, with an interactive maths lesson to explain what happens along the way.
 
-The app’s visible title is **Dr K’s EEG Lab**. Nexus remains the project name, including the **Nexus Server** desktop launcher.
+The source project remains **Nexus BCI** ([Nexus_BCI](https://github.com/zook111/Nexus_BCI)), and the desktop launcher is still called **Nexus Server**.
 
 **No headset yet? You can explore the app and learn the maths using its synthetic board. No API key or GPU is required.**
 
-> This is experimental education and research software. Task labels describe instructions, not verified thoughts, focus or relaxation. Synthetic signals are a software rehearsal; they are not evidence of brain-state classification. Nexus provides no clinical interpretation.
+> This is experimental education and research software. Task labels describe instructions, not verified thoughts, focus or relaxation. Synthetic signals are a software rehearsal; they are not evidence of brain-state classification. The app provides no clinical interpretation.
 
 ## Start here
 
@@ -30,13 +30,13 @@ For the recommended setup, use **macOS 13.5 or later**, **Python 3.12+**, **Node
 
 If you use nvm, run `nvm install && nvm use` after cloning. Intel Mac and physical-headset installation still need independent validation; the services are also tested in Linux CI. The desktop launcher is macOS-specific.
 
-**Intel MacBook on Ventura:** use macOS **13.5 or later** (13.7.8 meets this minimum), the standard [Python 3.13 macOS installer](https://www.python.org/downloads/release/python-31316/) and **Node 24 for macOS x64/Intel**. The Python installer supports Intel Macs; use its standard build. These versions have been checked for compatible dependency wheels and native-library targets. Running Nexus and collecting headset data on an Intel Ventura Mac still need an on-device test.
+**Intel MacBook on Ventura:** use macOS **13.5 or later** (13.7.8 meets this minimum), the standard [Python 3.13 macOS installer](https://www.python.org/downloads/release/python-31316/) and **Node 24 for macOS x64/Intel**. The Python installer supports Intel Macs; use its standard build. These versions have been checked for compatible dependency wheels and native-library targets. Running the app and collecting headset data on an Intel Ventura Mac still need an on-device test.
 
 Send your team the [two-page Intel/Ventura setup guide (PDF)](docs/intel-ventura-setup.pdf), or use its [copyable text version](docs/intel-ventura-setup.md). It walks through installation, a first simulated recording and troubleshooting.
 
 If Git prompts for Apple's Command Line Tools, finish that installation first. You can start it with `xcode-select --install`; the full Xcode application is not needed. After installing Python and Node, open a new Terminal and check `python3.13 --version` and `node --version`.
 
-### 2. Install Nexus
+### 2. Install Dr K’s EEG Lab
 
 ```bash
 git clone https://github.com/zook111/Nexus_BCI.git nexus
@@ -105,7 +105,7 @@ Read the [Experiment Lab method and limitations](docs/experiment-lab.md) before 
 
 ## Learn what the classifier is doing
 
-![Interactive Nexus covariance lesson using invented data](docs/images/nexus-lesson.jpg)
+![Dr K’s EEG Lab interactive covariance lesson using invented data](docs/images/eeg-lab-lesson.png)
 
 ```mermaid
 flowchart LR
@@ -128,9 +128,13 @@ The real classifier uses OAS-shrinkage covariance with pyRiemann and scikit-lear
 | **Feedback Lab** | Optional visual and audio feedback that pauses when signal quality is inadequate. |
 | **Doctor Demo** | Eyes-open/closed demonstrations and confidence-gated group experiences. Non-clinical throughout. |
 
+Open **Help** in the app to find the setup, experiment and first-week research PDFs. They are bundled for offline reading and open in a separate tab.
+
+![Dr K’s EEG Lab Help section with student guide links](docs/images/eeg-lab-help.png)
+
 ## Connect the headset
 
-Nexus supports **Cyton, 8 channels**, and **Cyton Daisy, 16 channels**, with the OpenBCI USB dongle. Follow the manufacturer's [Cyton guide](https://docs.openbci.com/GettingStarted/Boards/CytonGS/) and hardware/electrical-safety instructions. USB-C laptops may need an adapter.
+The app supports **Cyton, 8 channels**, and **Cyton Daisy, 16 channels**, with the OpenBCI USB dongle. Follow the manufacturer's [Cyton guide](https://docs.openbci.com/GettingStarted/Boards/CytonGS/) and hardware/electrical-safety instructions. USB-C laptops may need an adapter.
 
 Select the correct board and recommended serial port, then **Connect → Start**. On macOS, prefer `/dev/cu.*` ports. Hardware connection is manual by default. A generic FTDI or Bluetooth port does not prove that the right board is attached.
 
@@ -166,7 +170,8 @@ Defaults work without an environment file. For backend options, copy `backend/.e
 | Symptom | Try this |
 | --- | --- |
 | Setup rejects Python or Node | Check versions. Use Node 24 and Python 3.12+. `NEXUS_PYTHON=/path/to/python ./script/setup.sh` selects an interpreter. |
-| Port 8000 or 5173 is occupied | Stop the application that owns it. Nexus does not kill unrelated listeners. |
+| Port 8000 or 5173 is occupied | Stop the application that owns it. The launcher does not kill unrelated listeners. |
+| Opened `frontend/index.html` directly | Start **Nexus Server** and use `http://localhost:5173`. The app needs its local services rather than a `file://` page. |
 | No suitable USB port | Check the dongle and adapter, then Refresh. Use Synthetic to test the software separately. |
 | `BOARD_NOT_READY_ERROR:7` | Check board power/radio mode. Release the port, wait a few seconds, then Reset and reconnect. |
 | Frozen samples or a lost session | The live socket retries with bounded backoff; Refresh retries again if needed. For a lost native board, Reset, let the dongle settle, then Connect and Start. |

@@ -215,18 +215,13 @@ class BrainFlowBoardService:
 
     def snapshot(self, max_samples: int) -> StreamSnapshot:
         with self._lock:
-            if self._board is None or self._board_id is None:
-                return StreamSnapshot(status=self._status, message=self._last_error)
-            if self._status != BoardStatus.streaming:
-                return StreamSnapshot(
-                    status=self._status,
-                    board=self._board_kind,
-                    board_id=self._board_id,
-                    sampling_rate=self._safe_sampling_rate_locked(),
-                    message=self._last_error,
-                )
+            state = self._state_locked()
+            if state.status != BoardStatus.streaming or self._board is None:
+                return StreamSnapshot(**state.model_dump())
 
             data = self._current_board_data_locked(max_samples)
+            if self._status != BoardStatus.streaming:
+                return StreamSnapshot(**self._state_locked().model_dump())
             sample_count = int(data.shape[1]) if data.size else 0
             timestamp_channel = self._safe_timestamp_channel_locked()
             timestamps: list[float] = []
@@ -247,14 +242,10 @@ class BrainFlowBoardService:
                 )
 
             return StreamSnapshot(
-                status=self._status,
-                board=self._board_kind,
-                board_id=self._board_id,
+                **state.model_dump(),
                 sample_count=sample_count,
-                sampling_rate=self._safe_sampling_rate_locked(),
                 timestamps=timestamps,
                 channels=channels,
-                message=self._last_error,
             )
 
     def dsp_summary(

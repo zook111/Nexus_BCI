@@ -53,7 +53,7 @@ import {
 import { DoctorDemo } from './doctorDemo/DoctorDemo'
 import { ExperimentLab } from './experimentLab/ExperimentLab'
 import { StudentHelp } from './StudentHelp'
-import { connectLiveStream } from './liveStream'
+import { connectLiveStream, sharedBoardState } from './liveStream'
 import type {
   BoardKind,
   BoardState,
@@ -2952,6 +2952,7 @@ function App() {
   const [calibrationMarkers, setCalibrationMarkers] = useState<CalibrationMarker[]>([])
   const [error, setError] = useState<string | null>(null)
   const liveConnectionRef = useRef<ReturnType<typeof connectLiveStream> | null>(null)
+  const liveErrorRef = useRef<string | null>(null)
   const dspRef = useRef<DspSummary | null>(null)
   const signalQualityRef = useRef<SignalQuality | null>(null)
   const streamRef = useRef<StreamSnapshot>(emptyStream)
@@ -3257,18 +3258,27 @@ function App() {
     const connection = connectLiveStream(STREAM_WS_URL, {
       snapshot(snapshot) {
         setStream(snapshot)
+        setBoard(current => sharedBoardState(current, snapshot))
+        if (snapshot.eeg_channels && snapshot.eeg_names && snapshot.board && snapshot.status !== 'idle') {
+          setSelectedBoard(snapshot.board)
+          setSelectedPort(snapshot.serial_port ?? '')
+        }
         if (snapshot.status === 'error') {
           setBoard(current => current.status === 'streaming' || current.status === 'prepared'
             ? { ...current, status: 'error', message: snapshot.message }
             : current)
-          setError(snapshot.message || 'Signal paused. Reset and connect again.')
+          liveErrorRef.current = snapshot.message || 'Signal paused. Reset and connect again.'
+          setError(liveErrorRef.current)
         } else {
-          setError(current => current?.startsWith('Live stream paused.') ? null : current)
+          const previousLiveError = liveErrorRef.current
+          liveErrorRef.current = null
+          setError(current => current === previousLiveError ? null : current)
           if (snapshot.status === 'idle') setBoard(current => current.status === 'idle' ? current : emptyBoard)
         }
       },
       unavailable(message) {
         setStream(current => ({ ...current, status: 'error', sample_count: 0, timestamps: [], channels: [] }))
+        liveErrorRef.current = message
         setError(message)
       },
     })

@@ -3259,7 +3259,8 @@ function App() {
       snapshot(snapshot) {
         setStream(snapshot)
         setBoard(current => sharedBoardState(current, snapshot))
-        if (snapshot.eeg_channels && snapshot.eeg_names && snapshot.board && snapshot.status !== 'idle') {
+        if (snapshot.eeg_channels && snapshot.eeg_names && snapshot.board
+          && (snapshot.status === 'prepared' || snapshot.status === 'streaming')) {
           setSelectedBoard(snapshot.board)
           setSelectedPort(snapshot.serial_port ?? '')
         }

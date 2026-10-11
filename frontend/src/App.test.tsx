@@ -234,8 +234,9 @@ it('follows another window through connect, start, stop and reset without reload
   expect(controls.getByRole('button', { name: 'Start' })).toBeEnabled()
   expect(controls.getByRole('button', { name: 'Stop' })).toBeDisabled()
   const failure = 'Signal paused: native session lost. Reset and connect again.'
-  await broadcast({ ...preparedBoard, status: 'error', message: failure })
+  await broadcast({ ...preparedBoard, status: 'error', serial_port: null, message: failure })
   expect(screen.getByText(failure)).toBeInTheDocument()
+  expect(screen.getByRole('combobox', { name: 'Serial port' })).toHaveValue(trustedPort.device)
   expect(controls.getByRole('button', { name: 'Start' })).toBeDisabled()
   await broadcast(preparedBoard)
   expect(screen.queryByText(failure)).not.toBeInTheDocument()

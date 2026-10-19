@@ -1,6 +1,6 @@
 # Student app updates
 
-Status: proposed design, awaiting the user's update-behaviour choice. No updater implementation or update installation has been performed.
+Status: user approved the offered Update and restart behaviour on 19 October 2026. Implementation uses the launcher before starting services.
 
 ## Purpose
 
@@ -59,6 +59,8 @@ Keep native compilation/signing/launcher checks on the Mac. Run relevant Python/
 
 Update the README, student starting page, relevant setup PDF/source and Help with the final student flow. Submit implementation through a reviewed PR, address all comments, and wait at least five minutes after the latest revision before merging.
 
-## Decision still required
+## Confirmed behaviour
 
-The user has been asked whether to offer an Update and restart button or install automatically between sessions. The offered-update behaviour above is the recommendation; silent installation is not authorised by this design. If the user chooses automatic installation, revisit notifications, opt-out and first-install consent before implementation.
+The user chose “Offer an Update and restart button”. The launcher-first offer implements that choice without an HTTP software-install endpoint. Updates are never silently installed. The app is stopped before an offer is accepted, so the button starts the updated app after installation.
+
+Implementation decision: this first source updater requires checkout and local backup state on the same filesystem for atomic dependency moves. It refuses other layouts before mutation and points the helper to manual maintenance.

@@ -111,6 +111,7 @@ class CalibrationCueSpeechRequest(BaseModel):
 
 class BoardStateResponse(BaseModel):
     status: BoardStatus
+    connection_id: str | None = None
     board: BoardKind | None = None
     board_id: int | None = None
     serial_port: str | None = None

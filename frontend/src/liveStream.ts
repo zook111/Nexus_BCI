@@ -27,6 +27,12 @@ export function parseStreamSnapshot(data: string): StreamSnapshot {
     return { index: channel.index, label: channel.label, samples: channel.samples }
   })
   const result: StreamSnapshot = { status, sample_count: raw.sample_count, timestamps: raw.timestamps, channels }
+  if (raw.connection_id !== undefined) {
+    if (raw.connection_id !== null && (typeof raw.connection_id !== 'string' || !raw.connection_id)) {
+      throw new Error('Invalid connection identity')
+    }
+    result.connection_id = raw.connection_id
+  }
   if (raw.serial_port !== undefined) {
     if (raw.serial_port !== null && typeof raw.serial_port !== 'string') throw new Error('Invalid serial port')
     result.serial_port = raw.serial_port
@@ -60,6 +66,7 @@ export function sharedBoardState(current: BoardState, snapshot: StreamSnapshot):
   if (!snapshot.eeg_channels || !snapshot.eeg_names) return current
   const next: BoardState = {
     status: snapshot.status,
+    connection_id: snapshot.connection_id ?? null,
     board: snapshot.board ?? null,
     board_id: snapshot.board_id ?? null,
     serial_port: snapshot.serial_port ?? null,
@@ -71,6 +78,7 @@ export function sharedBoardState(current: BoardState, snapshot: StreamSnapshot):
   // Preserve identity for unchanged metadata so sample frames do not restart
   // consumers that depend on the board object or its channel arrays.
   const same = current.status === next.status
+    && (current.connection_id ?? null) === next.connection_id
     && (current.board ?? null) === next.board
     && (current.board_id ?? null) === next.board_id
     && (current.serial_port ?? null) === next.serial_port

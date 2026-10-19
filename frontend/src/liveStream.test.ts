@@ -72,6 +72,8 @@ it('validates shared device metadata before exposing it to controls', () => {
   expect(parseStreamSnapshot(JSON.stringify({ ...frame, ...metadata }))).toMatchObject(metadata)
   for (const invalid of [
     { ...metadata, serial_port: 123 },
+    { ...metadata, connection_id: 123 },
+    { ...metadata, connection_id: '' },
     { ...metadata, eeg_channels: [1.5] },
     { ...metadata, eeg_channels: [-1] },
     { ...metadata, eeg_names: [123] },

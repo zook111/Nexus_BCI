@@ -2,7 +2,7 @@
 
 **Blank template. Copy into ignored `data/session-notes/` before filling it in. Do not commit completed sheets.**
 
-Use `NOT RUN`, `PASS`, or `FAIL` for each stage. A pass requires the evidence requested below. Follow the [session packet](hardware-session-packet.md).
+Use `NOT RUN`, `PASS`, or `FAIL` for each stage. A pass requires the evidence requested below. Follow the [online session packet](https://github.com/zook111/Nexus_BCI/blob/main/docs/hardware-session-packet.md), or open `docs/hardware-session-packet.pdf` from your local checkout when offline. The online link stays valid when this sheet is copied into `data/session-notes/`.
 
 ## Machine and method
 

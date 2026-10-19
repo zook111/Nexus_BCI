@@ -19,6 +19,7 @@ const apiMock = vi.hoisted(() => ({
   calmFeatures: vi.fn(),
   recordingPreview: vi.fn(),
   recordingAnalysis: vi.fn(),
+  calibrationCueSpeech: vi.fn(),
 }))
 
 vi.mock('./api', async (importOriginal) => {
@@ -101,10 +102,13 @@ beforeEach(() => {
   apiMock.dspSummary.mockResolvedValue({ status: 'streaming', sample_count: 0, window_size: 500, bandpass_low_hz: 1, bandpass_high_hz: 45, channels: [] })
   apiMock.signalQuality.mockResolvedValue({ status: 'streaming', sample_count: 0, sampling_rate: 250, window_size: 500, channels: [], good_channels: 0, questionable_channels: 0, bad_channels: 0 })
   apiMock.calmFeatures.mockResolvedValue(null)
+  apiMock.calibrationCueSpeech.mockResolvedValue(new Blob([]))
 })
 
 afterEach(() => {
   cleanup()
+  vi.restoreAllMocks()
+  vi.useRealTimers()
   vi.unstubAllGlobals()
   vi.unstubAllEnvs()
 })
@@ -378,7 +382,10 @@ it('clears observer feedback history on a shared reset', async () => {
   expect(trend().getAttribute('d')).toBe('')
 })
 
-it.each([false, true])('detects a replaced connection after an outage without missed idle frames (replacement=%s)', async replaced => {
+it.each([
+  { seen: true, replaced: false }, { seen: true, replaced: true },
+  { seen: false, replaced: false }, { seen: false, replaced: true },
+])('follows recovered session identity (prior frame=$seen, replacement=$replaced)', async ({ seen, replaced }) => {
   vi.stubEnv('VITE_OPENBCI_AUTOCONNECT_SERIAL', '')
   apiMock.board.mockResolvedValue({ ...preparedBoard, status: 'streaming', connection_id: 'first-connection' })
   const saved = { ...emptyRecording, session_id: 'saved-reconnect', label: 'Saved practice', sampling_rate: 250, sample_count: 2 }
@@ -394,11 +401,89 @@ it.each([false, true])('detects a replaced connection after an outage without mi
       }) }))
     })
   }
-  await broadcast('first-connection')
+  if (seen) await broadcast('first-connection')
   fireEvent.click(screen.getByRole('button', { name: 'Preview' }))
   await screen.findByText('Replay window loaded')
   await act(async () => { sockets.at(-1)?.onerror?.() })
   await waitFor(() => expect(sockets).toHaveLength(2), { timeout: 2000 })
   await broadcast(replaced ? 'replacement-connection' : 'first-connection')
   expect(Boolean(screen.queryByText('Replay window loaded'))).toBe(!replaced)
+})
+
+it('restarts live analysis readers when connection identity changes without a status change', async () => {
+  vi.stubEnv('VITE_OPENBCI_AUTOCONNECT_SERIAL', '')
+  apiMock.board.mockResolvedValue({ ...preparedBoard, status: 'streaming', connection_id: 'first-connection' })
+  render(<App />)
+  await waitFor(() => expect(apiMock.dspSummary).toHaveBeenCalled())
+  const previous = [apiMock.dspSummary, apiMock.signalQuality, apiMock.calmFeatures].map(mock => mock.mock.calls.length)
+  await act(async () => {
+    sockets.at(-1)?.onmessage?.(new MessageEvent('message', { data: JSON.stringify({
+      ...preparedBoard, status: 'streaming', connection_id: 'replacement-connection', sample_count: 0, timestamps: [], channels: [],
+    }) }))
+  })
+  for (const [index, mock] of [apiMock.dspSummary, apiMock.signalQuality, apiMock.calmFeatures].entries()) {
+    expect(mock.mock.calls.length).toBeGreaterThan(previous[index])
+  }
+})
+
+it('preserves a completed prepared-board baseline on the first snapshot', async () => {
+  vi.stubEnv('VITE_OPENBCI_AUTOCONNECT_SERIAL', '')
+  apiMock.board.mockResolvedValue({ ...preparedBoard, connection_id: 'existing-connection' })
+  apiMock.calmBaseline.mockResolvedValue({ status: 'complete', elapsed_seconds: 30,
+    target_duration_seconds: 30, accepted_windows: 3, required_windows: 3,
+    line_frequency_hz: 50, window_size: 1000, posterior_labels: ['P7', 'P8', 'O1', 'O2'] })
+  render(<App />)
+  fireEvent.click(screen.getByRole('button', { name: 'Feedback Lab' }))
+  await screen.findByText('complete', { exact: true })
+  await act(async () => {
+    sockets.at(-1)?.onmessage?.(new MessageEvent('message', { data: JSON.stringify({
+      ...preparedBoard, connection_id: 'existing-connection', sample_count: 0, timestamps: [], channels: [],
+    }) }))
+  })
+  expect(screen.getByText('complete', { exact: true })).toBeInTheDocument()
+})
+
+it.each(['replacement', 'manual stop', 'stream stop'])('exports retained calibration markers as interrupted after %s', async reason => {
+  vi.useFakeTimers()
+  vi.stubEnv('VITE_OPENBCI_AUTOCONNECT_SERIAL', '')
+  apiMock.board.mockResolvedValue({ ...preparedBoard, status: 'streaming', connection_id: 'original-connection' })
+  let exported = ''
+  const NativeBlob = Blob
+  vi.stubGlobal('Blob', class extends NativeBlob {
+    constructor(parts: BlobPart[], options?: BlobPropertyBag) {
+      super(parts, options)
+      if (options?.type === 'application/json') exported = String(parts[0])
+    }
+  })
+  const NativeURL = URL
+  vi.stubGlobal('URL', class extends NativeURL {
+    static createObjectURL() { return 'blob:calibration-test' }
+    static revokeObjectURL() {}
+  })
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+  await act(async () => { render(<App />) })
+  await act(async () => {
+    sockets.at(-1)?.onmessage?.(new MessageEvent('message', { data: JSON.stringify({
+      ...preparedBoard, status: 'streaming', connection_id: 'original-connection', sample_count: 0, timestamps: [], channels: [],
+    }) }))
+  })
+  const cues = within(screen.getByLabelText('Guided calibration cues'))
+  await act(async () => { fireEvent.click(cues.getByRole('button', { name: 'Run cues' })) })
+  expect(cues.getByRole('button', { name: 'Stop' })).toBeEnabled()
+  await act(async () => {
+    if (reason === 'manual stop') fireEvent.click(cues.getByRole('button', { name: 'Stop' }))
+    else sockets.at(-1)?.onmessage?.(new MessageEvent('message', { data: JSON.stringify({
+      ...preparedBoard, status: reason === 'replacement' ? 'streaming' : 'prepared',
+      connection_id: reason === 'replacement' ? 'new-connection' : 'original-connection',
+      sample_count: 0, timestamps: [], channels: [],
+    }) }))
+  })
+  await act(async () => { vi.advanceTimersByTime(300) })
+  expect(cues.getByRole('button', { name: 'Stop' })).toBeDisabled()
+  await act(async () => { vi.advanceTimersByTime(12000) })
+  fireEvent.click(cues.getByRole('button', { name: 'Export markers' }))
+  const payload = JSON.parse(exported)
+  expect(payload.board.connection_id).toBe('original-connection')
+  expect(payload.interrupted).toBe(true)
+  expect(payload.markers).toHaveLength(1)
 })

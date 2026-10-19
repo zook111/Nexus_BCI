@@ -53,8 +53,8 @@
 
 **Files:** modify README, student starting page, Intel setup Markdown/PDF, Help text, project_status and CI to run updater tests.
 
-- [ ] Document Update and restart, Not now, offline use, save/stop/open sequence, progress/error logs and the one-time bootstrap for pre-updater installations. Distinguish the source updater from a standalone DMG.
-- [ ] Regenerate and render the setup PDF; verify links, commands, page count and matching production asset.
-- [ ] Run updater suite, backend Ruff/full tests, frontend lint/full tests/build and native packaging/launcher checks. Run an isolated fake-remote update/rollback through the GUI-control boundary without touching participant data or the real checkout.
+- [x] Document Update and restart, Not now, offline use, save/stop/open sequence, progress/error logs and the one-time bootstrap for pre-updater installations. Distinguish the source updater from a standalone DMG.
+- [x] Regenerate and render the setup PDF; verify links, commands, page count and matching production asset.
+- [x] Run updater suite, backend Ruff/full tests, frontend lint/full tests/build and native packaging/launcher checks. Run an isolated fake-remote update/rollback through the GUI-control boundary without touching participant data or the real checkout.
 - [ ] Obtain one fresh whole-branch review as required by executing-plans; address findings and GitHub review comments. Update project status and open the implementation PR ready for review.
 - [ ] Require passing current-head checks, resolved comments and at least five minutes from the latest revision; recheck and merge under the existing authorization. Do not claim independent Intel or real EEG verification.

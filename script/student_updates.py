@@ -283,6 +283,18 @@ class Updater:
             ("modules", self.root / "frontend/node_modules", "had_modules"),
         ]
         for name, destination, had_key in pairs:
+            restoring = journal.get("restoring_" + name)
+            if restoring is not None and (
+                not isinstance(restoring, dict)
+                or set(restoring) != {"device", "inode"}
+                or type(restoring["device"]) is not int
+                or restoring["device"] < 0
+                or type(restoring["inode"]) is not int
+                or restoring["inode"] <= 0
+            ):
+                raise UpdateError(
+                    "Dependency recovery identity is invalid. Ask your helper."
+                )
             if journal.get("restored_" + name) is True:
                 if destination.is_symlink() or (
                     journal[had_key] and not destination.is_dir()
@@ -290,6 +302,12 @@ class Updater:
                     raise UpdateError(
                         "A restored dependency path changed. Ask your helper."
                     )
+                if restoring is not None:
+                    stat = destination.stat()
+                    if restoring != {"device": stat.st_dev, "inode": stat.st_ino}:
+                        raise UpdateError(
+                            "A previously restored dependency directory was replaced. It was preserved; ask your helper."
+                        )
                 continue
             saved = self.backup(journal) / name
             if saved.is_symlink():
@@ -297,9 +315,35 @@ class Updater:
                     "A saved dependency path is not safe. Backups were retained."
                 )
             if saved.exists():
+                if not saved.is_dir():
+                    raise UpdateError(
+                        "A dependency backup is not a directory. Recovery was postponed."
+                    )
+                stat = saved.stat()
+                identity = {"device": stat.st_dev, "inode": stat.st_ino}
+                if restoring is not None and restoring != identity:
+                    raise UpdateError(
+                        "A dependency backup changed unexpectedly. It was retained."
+                    )
+                journal["restoring_" + name] = identity
+                self.write_journal(
+                    journal
+                )  # Durable intent before removing/moving either directory.
                 self.remove_generated(destination)
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 saved.rename(destination)
+            elif restoring is not None:
+                # A rename preserves directory identity on the required filesystem.
+                # Resume the window between that rename and the completion write.
+                if destination.is_symlink() or not destination.is_dir():
+                    raise UpdateError(
+                        "The restored dependency directory could not be verified."
+                    )
+                stat = destination.stat()
+                if restoring != {"device": stat.st_dev, "inode": stat.st_ino}:
+                    raise UpdateError(
+                        "The restored dependency identity does not match. Files were retained."
+                    )
             elif not journal[had_key] and journal["phase"] in {
                 "installing",
                 "starting",

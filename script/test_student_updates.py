@@ -825,3 +825,77 @@ def test_service_start_can_hand_off_its_intended_children(project):
         time.sleep(0.03)
     assert marker.read_text() == "running"
     assert not u.activity.exists()
+
+
+@pytest.mark.parametrize("name", ["venv", "modules"])
+def test_recovery_resumes_after_dependency_rename_before_completion_write(
+    project, monkeypatch, name
+):
+    _m, u, root, _, old, target = project
+    j = u.begin(target)
+    (root / ".venv").rename(u.backup(j) / "venv")
+    (root / "frontend/node_modules").rename(u.backup(j) / "modules")
+    git(root, "merge", "--ff-only", target)
+    j["phase"] = "installing"
+    u.write_journal(j)
+    prepare_new(root)
+
+    class SimulatedPowerLoss(BaseException):
+        pass
+
+    real_write = u.write_journal
+
+    def interrupted_write(journal):
+        if journal.get("restored_" + name) is True:
+            raise SimulatedPowerLoss()
+        real_write(journal)
+
+    monkeypatch.setattr(u, "write_journal", interrupted_write)
+    with pytest.raises(SimulatedPowerLoss):
+        u.restore(j)
+    monkeypatch.setattr(u, "write_journal", real_write)
+    starts = []
+    u.recover(
+        start=lambda: starts.append(git(root, "rev-parse", "HEAD")), stop=lambda: None
+    )
+    assert starts == [old]
+    assert not u.journal.exists()
+    assert (root / ".venv/sentinel").read_text() == "old"
+    assert (root / "frontend/node_modules/sentinel").read_text() == "old"
+    assert_private(root)
+
+
+def test_recovery_does_not_accept_replaced_already_restored_directory(
+    project, monkeypatch, tmp_path
+):
+    m, u, root, _, _, target = project
+    j = u.begin(target)
+    (root / ".venv").rename(u.backup(j) / "venv")
+    (root / "frontend/node_modules").rename(u.backup(j) / "modules")
+    git(root, "merge", "--ff-only", target)
+    j["phase"] = "installing"
+    u.write_journal(j)
+    prepare_new(root)
+
+    class Interrupted(BaseException):
+        pass
+
+    real_write = u.write_journal
+
+    def pause_before_modules(journal):
+        if journal.get("restoring_modules"):
+            raise Interrupted()
+        real_write(journal)
+
+    monkeypatch.setattr(u, "write_journal", pause_before_modules)
+    with pytest.raises(Interrupted):
+        u.restore(j)
+    monkeypatch.setattr(u, "write_journal", real_write)
+    (root / ".venv").rename(tmp_path / "original-restored-environment")
+    (root / ".venv").mkdir()
+    (root / ".venv/helper-notes").write_text("preserve replacement")
+    with pytest.raises(m.UpdateError):
+        u.recover(start=lambda: pytest.fail("not verified original"), stop=lambda: None)
+    assert (root / ".venv/helper-notes").read_text() == "preserve replacement"
+    assert u.journal.exists()
+    assert_private(root)

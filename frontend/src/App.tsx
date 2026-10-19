@@ -2908,7 +2908,7 @@ async function loadBoardContext() {
 
 function App() {
   const [health, setHealth] = useState<HealthResponse | null>(null)
-  const [ports, setPorts] = useState<SerialPortInfo[]>([])
+  const [ports, setPorts] = useState<Array<SerialPortInfo & { sharedSessionOnly?: boolean }>>([])
   const [board, setBoard] = useState<BoardState>(emptyBoard)
   const [stream, setStream] = useState<StreamSnapshot>(emptyStream)
   const [recording, setRecording] = useState<RecordingState>(emptyRecording)
@@ -3266,18 +3266,20 @@ function App() {
         }
         setStream(snapshot)
         setBoard(current => sharedBoardState(current, snapshot))
+        const activePort = snapshot.status === 'prepared' || snapshot.status === 'streaming'
+          ? snapshot.serial_port : null
+        setPorts(current => {
+          const next = current.filter(port => !port.sharedSessionOnly || port.device === activePort)
+          if (activePort && !next.some(port => port.device === activePort)) {
+            return [...next, { device: activePort, transport: 'unknown', recommended: false,
+              rank: 0, message: 'Active backend serial port', sharedSessionOnly: true }]
+          }
+          return next.length === current.length ? current : next
+        })
         if (snapshot.eeg_channels && snapshot.eeg_names && snapshot.board
           && (snapshot.status === 'prepared' || snapshot.status === 'streaming')) {
           setSelectedBoard(snapshot.board)
           setSelectedPort(snapshot.serial_port ?? '')
-          const activePort = snapshot.serial_port
-          if (activePort) {
-            setPorts(current => current.some(port => port.device === activePort) ? current : [
-              ...current,
-              { device: activePort, transport: 'unknown', recommended: false, rank: 0,
-                message: 'Active backend serial port' },
-            ])
-          }
         }
         if (snapshot.status === 'error') {
           setBoard(current => current.status === 'streaming' || current.status === 'prepared'
@@ -3996,7 +3998,7 @@ function App() {
                   }),
                 )
               }
-              disabled={busy || deviceSelectionLocked || (canUseSerialPort && !selectedPort)}
+              disabled={busy || deviceSelectionLocked || (canUseSerialPort && !selectedPortInfo)}
             >
               <PlugZap size={16} />
               Connect

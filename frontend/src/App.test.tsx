@@ -305,4 +305,20 @@ it('shows an active serial port discovered by another window after this tab load
   expect(screen.getByRole('combobox', { name: 'Serial port' })).toHaveValue(trustedPort.device)
   expect(screen.getByText('Active backend serial port')).toBeInTheDocument()
   expect(apiMock.connect).not.toHaveBeenCalled()
+  const otherPort = '/dev/cu.usbserial-EXAMPLE002'
+  await act(async () => {
+    sockets.at(-1)?.onmessage?.(new MessageEvent('message', {
+      data: JSON.stringify({ ...preparedBoard, serial_port: otherPort, sample_count: 0, timestamps: [], channels: [] }),
+    }))
+  })
+  expect(screen.queryByRole('option', { name: new RegExp(trustedPort.device) })).not.toBeInTheDocument()
+  expect(screen.getByRole('combobox', { name: 'Serial port' })).toHaveValue(otherPort)
+  await act(async () => {
+    sockets.at(-1)?.onmessage?.(new MessageEvent('message', {
+      data: JSON.stringify({ ...idleBoard, sample_count: 0, timestamps: [], channels: [] }),
+    }))
+  })
+  expect(screen.queryByRole('option', { name: new RegExp(otherPort) })).not.toBeInTheDocument()
+  expect(screen.queryByText('Active backend serial port')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Connect' })).toBeDisabled()
 })

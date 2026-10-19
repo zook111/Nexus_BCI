@@ -2,6 +2,12 @@
 
 Public repository: [zook111/Nexus_BCI](https://github.com/zook111/Nexus_BCI).
 
+## Student updater proposal, 19 October 2026
+
+- Prepared `docs/superpowers/specs/2026-10-19-student-updates-design.md` for launcher-based update offers before starting the app. A fresh builder check found no material unanswered implementation questions beyond the user's pending offered-versus-automatic update choice.
+- The proposal preserves offline startup and the existing stop action, refuses active services or local source conflicts, pins the offered protected-main revision, and requires recoverable source/dependency backups and failure tests.
+- This is design work only. No updater code, dependency installation, service restart or software update has been performed. Implementation and review-ready PR remain pending the behaviour choice.
+
 ## First-time Terminal instructions, 19 October 2026
 
 - Expanded the Intel/Ventura setup text and PDF for students with no coding experience: what Terminal and commands are, Spotlight and Finder launch routes, copy/paste and Return, the prompt, waiting for completion, handling errors and returning to the project folder another day.

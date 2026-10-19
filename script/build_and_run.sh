@@ -381,7 +381,10 @@ function run(argv) {
     if (recording.active !== false) return 'unknown'
     if (board.status === 'streaming') return 'streaming'
     if (board.status === 'prepared') return 'connected'
-    if (board.status === 'idle' || board.status === 'error') return 'idle'
+    if (board.status === 'idle') return 'idle'
+    // A failed native release reports error but keeps the board and connection_id
+    // for Reset to retry. Any other error cannot be confirmed released either.
+    if (board.status === 'error' && typeof board.connection_id === 'string' && board.connection_id) return 'connected'
   } catch (error) {}
   return 'unknown'
 }

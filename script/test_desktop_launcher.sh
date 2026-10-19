@@ -309,6 +309,31 @@ expect_status running unknown
 api_state '{"/api/board": {"status": "idle"}}'
 expect_status running unknown
 
+# A board error never counts as idle. A failed native release keeps the board and its
+# connection_id, so that error is a live session that Reset must retry.
+api_state '{"/api/board": {"status": "error", "connection_id": "retained-session"}, "/api/recordings/current": {"active": false}}'
+expect_status running connected "Press Reset"
+expect_window "Stop server" Cancel Close <<EOF
+window Nexus EEG Lab is running at http://127.0.0.1:$UI_PORT. [Stop server,Close,Open app] default Open app
+confirm A board is connected. Press Reset in Nexus EEG Lab before stopping the server. -> Cancel
+window Nexus EEG Lab is running at http://127.0.0.1:$UI_PORT. [Stop server,Close,Open app] default Open app
+EOF
+if launcher --toggle >/dev/null 2>&1; then fail "--toggle stopped a retained board session"; fi
+kill -0 "$FAKE_backend_PID" && kill -0 "$FAKE_frontend_PID" || fail "a retained board session was stopped"
+# Without a usable connection identity the release cannot be confirmed either.
+for board in '{"status": "error", "connection_id": null}' '{"status": "error"}' \
+  '{"status": "error", "connection_id": ""}' '{"status": "error", "connection_id": 7}'; do
+  api_state "{\"/api/board\": $board, \"/api/recordings/current\": {\"active\": false}}"
+  expect_status running unknown "could not check"
+  if launcher --toggle >/dev/null 2>&1; then fail "--toggle stopped after board error $board"; fi
+  kill -0 "$FAKE_backend_PID" && kill -0 "$FAKE_frontend_PID" || fail "board error $board stopped services"
+done
+expect_window "Stop server" Cancel Close <<EOF
+window Nexus EEG Lab is running at http://127.0.0.1:$UI_PORT. [Stop server,Close,Open app] default Open app
+confirm Nexus Server could not check whether a board session or recording is active. -> Cancel
+window Nexus EEG Lab is running at http://127.0.0.1:$UI_PORT. [Stop server,Close,Open app] default Open app
+EOF
+
 # Repeated launches: --start opens the running app, and --toggle (older shortcuts)
 # leaves a live or unconfirmed session running.
 api_state '{"/api/board": {"status": "streaming"}, "/api/recordings/current": {"active": true}}'

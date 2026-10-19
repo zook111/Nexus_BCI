@@ -402,3 +402,19 @@ it.each([false, true])('detects a replaced connection after an outage without mi
   await broadcast(replaced ? 'replacement-connection' : 'first-connection')
   expect(Boolean(screen.queryByText('Replay window loaded'))).toBe(!replaced)
 })
+
+it('restarts live analysis readers when connection identity changes without a status change', async () => {
+  vi.stubEnv('VITE_OPENBCI_AUTOCONNECT_SERIAL', '')
+  apiMock.board.mockResolvedValue({ ...preparedBoard, status: 'streaming', connection_id: 'first-connection' })
+  render(<App />)
+  await waitFor(() => expect(apiMock.dspSummary).toHaveBeenCalled())
+  const previous = [apiMock.dspSummary, apiMock.signalQuality, apiMock.calmFeatures].map(mock => mock.mock.calls.length)
+  await act(async () => {
+    sockets.at(-1)?.onmessage?.(new MessageEvent('message', { data: JSON.stringify({
+      ...preparedBoard, status: 'streaming', connection_id: 'replacement-connection', sample_count: 0, timestamps: [], channels: [],
+    }) }))
+  })
+  for (const [index, mock] of [apiMock.dspSummary, apiMock.signalQuality, apiMock.calmFeatures].entries()) {
+    expect(mock.mock.calls.length).toBeGreaterThan(previous[index])
+  }
+})

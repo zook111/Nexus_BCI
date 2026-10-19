@@ -52,6 +52,7 @@ Clean Python 3.12 / Node 24 setup, backend Ruff and 161 tests, frontend lint and
 - Exiting replay also invalidates pending preview/analysis requests. A late response or error cannot restore saved data or overwrite the live view after a shared start. Requests intentionally begun during a running stream remain supported.
 - Shared and local resets now use the same feedback cleanup, clearing prior-session trends, baseline, DSP and quality state. A browser regression verifies the observer history is emptied rather than concatenated across sessions.
 - Board snapshots carry a fresh connection identifier for each successful Connect, stable through Stop/Start and cleared on release. An observer detects a replacement even when a socket outage hid Reset/Connect and both visible statuses were streaming. A reconnect to the same connection preserves an intentionally opened replay; replacement resets live feedback and invalidates replay requests.
+- Live DSP, quality and calm readers restart on connection identity changes as well as status changes, cancelling old pending results and immediately requesting the replacement session's analysis.
 
 ## Known limits and next steps
 

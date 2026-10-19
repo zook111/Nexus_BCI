@@ -3428,6 +3428,7 @@ function App() {
     }
   }, [
     board.status,
+    board.connection_id,
     replay,
     dspWindowSize,
     dspBandpassLowHz,
@@ -3487,7 +3488,7 @@ function App() {
       cancelled = true
       window.clearInterval(interval)
     }
-  }, [activeView, board.status, lineFrequencyHz, replay])
+  }, [activeView, board.status, board.connection_id, lineFrequencyHz, replay])
 
   useEffect(() => {
     if (board.status !== 'streaming' || replay) {
@@ -3518,7 +3519,7 @@ function App() {
       cancelled = true
       window.clearInterval(interval)
     }
-  }, [board.status, lineFrequencyHz, replay])
+  }, [board.status, board.connection_id, lineFrequencyHz, replay])
 
   const visibleChannels = useMemo(() => stream.channels.slice(0, 8), [stream.channels])
   const replayChannels = useMemo(() => buildReplayChannels(replay), [replay])

@@ -7,11 +7,14 @@ import hashlib
 import json
 import os
 import re
+import select
 import shutil
+import signal
 import socket
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 from collections.abc import Callable
 from pathlib import Path
@@ -47,6 +50,7 @@ class Updater:
         )
         self.journal = self.state / "transaction.json"
         self.previous = self.state / "previous.json"
+        self.activity = self.state / "activity.json"
 
     def git(self, *args: str) -> str:
         try:
@@ -93,22 +97,46 @@ class Updater:
             raise UpdateError("The downloaded version does not match the update offer.")
         self.git("merge-base", "--is-ancestor", old, target)
         self.validate()  # Recheck after network activity, before any dependency move.
-        for name in self.git("ls-tree", "-r", "--name-only", target).splitlines():
+        self.guard_checkout(target)
+        return old
+
+    def guard_checkout(self, target: str) -> None:
+        tracked = set(self.git("ls-files", "-z").split("\0"))
+        for name in self.git("ls-tree", "-r", "-z", "--name-only", target).split("\0"):
+            if not name:
+                continue
             parts = Path(name).parts
-            if any(p in PROTECTED or p.startswith(".env.") for p in parts):
+            if any(
+                part.casefold() in PROTECTED
+                or (
+                    part.casefold().startswith(".env.")
+                    and not (
+                        part.casefold() == ".env.example" and index == len(parts) - 1
+                    )
+                )
+                for index, part in enumerate(parts)
+            ):
                 raise UpdateError(
-                    "The update contains a protected local-data path. Nothing was installed."
+                    "The source contains a protected local-data path. No local data was replaced."
                 )
             candidate = self.root / name
-            for parent in [candidate, *candidate.parents]:
-                if parent == self.root:
+            for path in [candidate, *candidate.parents]:
+                if path == self.root:
                     break
-                if parent.is_symlink():
+                relative = path.relative_to(self.root).as_posix()
+                if path.is_symlink():
                     raise UpdateError(
-                        "A local symbolic link conflicts with the update. Ask your helper."
+                        "A local symbolic link conflicts with source checkout. Ask your helper."
                     )
-            if candidate.exists():
-                check = subprocess.run(
+                if not path.exists():
+                    continue
+                if relative in tracked:
+                    continue
+                if path == candidate or not path.is_dir():
+                    raise UpdateError(
+                        "A new local file or directory conflicts with source checkout. It and recovery copies were preserved."
+                    )
+                ignored = subprocess.run(
                     [
                         "git",
                         "-C",
@@ -116,17 +144,16 @@ class Updater:
                         "check-ignore",
                         "--quiet",
                         "--",
-                        name,
+                        relative,
                     ],
                     check=False,
                 )
-                if check.returncode == 0:
+                if ignored.returncode == 0:
                     raise UpdateError(
-                        "The update would replace a local ignored file. Your files were preserved."
+                        "An ignored local directory conflicts with source checkout. Its files were preserved."
                     )
-                if check.returncode != 1:
-                    raise UpdateError("Could not check local file conflicts.")
-        return old
+                if ignored.returncode != 1:
+                    raise UpdateError("Could not verify local file conflicts.")
 
     def backup(self, journal: dict) -> Path:
         if not IDENTIFIER.fullmatch(str(journal.get("id", ""))):
@@ -218,11 +245,23 @@ class Updater:
             shutil.rmtree(path)
 
     def restore(self, journal: dict) -> None:
-        if self.git("symbolic-ref", "--quiet", "--short", "HEAD") != "main":
+        finish_interrupted_step(self)
+        branch = self.git("rev-parse", "--abbrev-ref", "HEAD")
+        head = self.git("rev-parse", "HEAD")
+        resuming = (
+            branch == "HEAD"
+            and journal.get("restoring_source") is True
+            and head == journal["old"]
+        )
+        if branch != "main" and not resuming:
             raise UpdateError(
                 "The project branch changed during the update. Backups were retained."
             )
-        if self.git("rev-parse", "HEAD") not in {journal["old"], journal["target"]}:
+        main = self.git("rev-parse", "refs/heads/main")
+        if head not in {journal["old"], journal["target"]} or main not in {
+            journal["old"],
+            journal["target"],
+        }:
             raise UpdateError(
                 "The project revision changed unexpectedly. Backups were retained."
             )
@@ -232,7 +271,13 @@ class Updater:
             raise UpdateError(
                 "Code was edited during installation. Those edits and backups were retained; ask your helper."
             )
-        self.git("reset", "--keep", journal["old"])
+        self.guard_checkout(journal["old"])
+        journal["restoring_source"] = True
+        self.write_journal(journal)
+        self.git("checkout", "--no-overwrite-ignore", "--detach", journal["old"])
+        # CAS preserves a human commit made while checkout/recovery was in progress.
+        self.git("update-ref", "refs/heads/main", journal["old"], main)
+        self.git("checkout", "--no-overwrite-ignore", "main")
         pairs = [
             ("venv", self.root / ".venv", "had_venv"),
             ("modules", self.root / "frontend/node_modules", "had_modules"),
@@ -341,6 +386,196 @@ class Updater:
                     shutil.rmtree(old_backup)
             except (UpdateError, OSError):
                 pass  # Cleanup failure cannot undo a healthy installation.
+
+
+def process_details(pid: int) -> tuple[str, str] | None:
+    result = subprocess.run(
+        ["ps", "-ww", "-p", str(pid), "-o", "lstart=", "-o", "command="],
+        text=True,
+        capture_output=True,
+        check=False,
+        env={**os.environ, "LC_ALL": "C"},
+        timeout=5,
+    )
+    if result.returncode:
+        return None
+    fields = result.stdout.strip().split(maxsplit=5)
+    return (" ".join(fields[:5]), fields[5]) if len(fields) == 6 else None
+
+
+def group_has_live_processes(group: int) -> bool:
+    result = subprocess.run(
+        ["ps", "-axo", "pgid=,stat="],
+        text=True,
+        capture_output=True,
+        check=True,
+        timeout=5,
+    )
+    for line in result.stdout.splitlines():
+        fields = line.split()
+        if (
+            len(fields) == 2
+            and fields[0] == str(group)
+            and not fields[1].startswith("Z")
+        ):
+            return True
+    return False
+
+
+def terminate_owned_group(group: int, process: subprocess.Popen | None = None) -> None:
+    if group_has_live_processes(group):
+        if process is not None and process.returncode is not None:
+            raise UpdateError(
+                "An update process exited unexpectedly. Ask your helper before recovery."
+            )
+        try:
+            os.killpg(group, signal.SIGTERM)
+            time.sleep(0.2)
+            if group_has_live_processes(group):
+                os.killpg(group, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    if process is not None:
+        process.wait(timeout=5)
+    deadline = time.monotonic() + 5
+    while group_has_live_processes(group):
+        if time.monotonic() > deadline:
+            raise UpdateError(
+                "An installer is still stopping. Recovery was postponed to protect your files."
+            )
+        time.sleep(0.05)
+
+
+def finish_interrupted_step(updater: Updater) -> None:
+    if not updater.activity.exists():
+        return
+    try:
+        record = json.loads(updater.activity.read_text())
+        if (
+            not isinstance(record, dict)
+            or record.get("root") != str(updater.root)
+            or type(record.get("pid")) is not int
+            or record["pid"] <= 1
+            or not isinstance(record.get("start"), str)
+            or not IDENTIFIER.fullmatch(str(record.get("token", "")))
+        ):
+            raise ValueError("invalid activity")
+        pid = record["pid"]
+        if group_has_live_processes(pid):
+            details = process_details(pid)
+            if (
+                details is None
+                or details[0] != record["start"]
+                or "eeg-update-" + record["token"] not in details[1]
+                or os.getpgid(pid) != pid
+            ):
+                raise UpdateError(
+                    "An interrupted installer could not be identified safely. Ask your helper; files and backups were retained."
+                )
+            terminate_owned_group(pid)
+        updater.activity.unlink()
+    except (ValueError, OSError, subprocess.SubprocessError) as exc:
+        raise UpdateError(
+            "Could not verify interrupted installer ownership. Keep the app stopped and ask your helper."
+        ) from exc
+
+
+def run_owned_step(
+    updater: Updater,
+    args: list[str],
+    environment: dict,
+    *,
+    timeout: float,
+    preserve_children: bool = False,
+) -> int:
+    """Gate execution until its process identity is durable; settle children before rollback."""
+    finish_interrupted_step(updater)
+    updater.state.mkdir(parents=True, exist_ok=True)
+    read_fd, write_fd = os.pipe()
+    token = uuid.uuid4().hex
+    # The supervisor remains alive until acknowledged, so its PID cannot be reused
+    # while transient descendants are being terminated. The command cannot read
+    # the parent's control pipe or request interactive installation input.
+    supervisor = """status_fd="$1"; shift
+IFS= read -r ready || exit 125
+[ "$ready" = go ] || exit 125
+"$@" </dev/null
+code=$?
+printf '%s\n' "$code" >&"$status_fd"
+IFS= read -r acknowledged || exit "$code"
+exit "$code"
+"""
+    process = None
+    settled = False
+    try:
+        process = subprocess.Popen(
+            [
+                "/bin/bash",
+                "-c",
+                supervisor,
+                "eeg-update-" + token,
+                str(write_fd),
+                *args,
+            ],
+            cwd=updater.root,
+            env=environment,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            pass_fds=(write_fd,),
+            start_new_session=True,
+        )
+        os.close(write_fd)
+        write_fd = -1
+        details = process_details(process.pid)
+        if details is None or os.getpgid(process.pid) != process.pid:
+            raise UpdateError("Could not record installer ownership.")
+        updater.write_json(
+            updater.activity,
+            {
+                "root": str(updater.root),
+                "pid": process.pid,
+                "start": details[0],
+                "token": token,
+            },
+        )
+        process.stdin.write(b"go\n")
+        process.stdin.flush()
+        if not select.select([read_fd], [], [], timeout)[0]:
+            raise subprocess.TimeoutExpired(args, timeout)
+        status = os.read(read_fd, 32)
+        if not re.fullmatch(rb"[0-9]{1,3}\n", status) or int(status) > 255:
+            raise UpdateError("The installer exited without a verifiable result.")
+        code = int(status)
+        if code == 0 and preserve_children:
+            # Only the service-start command may hand off long-lived children;
+            # these have already been recorded by the launcher's PID safeguards.
+            updater.activity.unlink()
+            process.stdin.write(b"ack\n")
+            process.stdin.flush()
+            process.wait(timeout=5)
+            if process.returncode:
+                raise UpdateError("Could not complete service handoff.")
+            settled = True
+        else:
+            terminate_owned_group(process.pid, process)
+            settled = True
+            updater.activity.unlink()
+        return code
+    finally:
+        try:
+            if process is not None and not settled:
+                terminate_owned_group(process.pid, process)
+                if updater.activity.exists():
+                    record = json.loads(updater.activity.read_text())
+                    if record.get("token") == token:
+                        updater.activity.unlink()
+        finally:
+            os.close(read_fd)
+            if write_fd >= 0:
+                os.close(write_fd)
+            if process is not None and process.stdin:
+                process.stdin.close()
 
 
 def latest_commit() -> str:
@@ -472,6 +707,7 @@ end run"""
 
 
 def startup(updater: Updater, launcher: Path, *, offer: Callable | None = None) -> int:
+    finish_interrupted_step(updater)
     if updater.journal.exists():
         ensure_stopped(updater.root, launcher_state())
         return run_worker(updater, launcher, "recover")
@@ -532,6 +768,7 @@ def run_worker(updater: Updater, launcher: Path, target: str) -> int:
 
 
 def worker_run(updater: Updater, launcher: Path, target: str) -> int:
+    finish_interrupted_step(updater)
     ensure_stopped(updater.root, launcher_state())
     updater.state.mkdir(parents=True, exist_ok=True)
     log_path = updater.state / "update.log"
@@ -568,23 +805,27 @@ def worker_run(updater: Updater, launcher: Path, target: str) -> int:
             "A supported Node/npm installation is required. Ask your helper."
         )
 
-    def step(label: str, args: list[str], timeout: int = 900) -> None:
+    def step(
+        label: str,
+        args: list[str],
+        timeout: int = 900,
+        *,
+        preserve_children: bool = False,
+    ) -> None:
         # Record stages/exit codes only, not command output or environment credentials.
         with log_path.open("a") as log:
             log.write(label + "\n")
         try:
-            result = subprocess.run(
+            code = run_owned_step(
+                updater,
                 args,
-                cwd=updater.root,
-                env=environment,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                check=False,
+                environment,
                 timeout=timeout,
+                preserve_children=preserve_children,
             )
             with log_path.open("a") as log:
-                log.write(f"{label}: exit {result.returncode}\n")
-            if result.returncode:
+                log.write(f"{label}: exit {code}\n")
+            if code:
                 raise UpdateError(
                     label
                     + " failed. Ask your helper to check installation prerequisites."
@@ -603,6 +844,7 @@ def worker_run(updater: Updater, launcher: Path, target: str) -> int:
             "Starting local services",
             ["/bin/bash", str(launcher), "--locked-start_services"],
             120,
+            preserve_children=True,
         )
         step("Checking local services", ["/bin/bash", str(launcher), "--verify"], 20)
 

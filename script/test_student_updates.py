@@ -41,6 +41,11 @@ def project(tmp_path, monkeypatch):
         ".venv/\nfrontend/node_modules/\nrecordings/\ndata/\n.env\n*.csv\n"
     )
     (root / "app.txt").write_text("old")
+    # Match the real repository: placeholder templates are tracked, settings are not.
+    for name in [".env.example", "backend/.env.example", "frontend/.env.example"]:
+        template = root / name
+        template.parent.mkdir(parents=True, exist_ok=True)
+        template.write_text("EXAMPLE_OPTION=\n")
     git(root, "add", ".")
     git(root, "commit", "-m", "old")
     git(root, "push", "-u", "origin", "main")
@@ -574,3 +579,249 @@ raise SystemExit(20)
         if first.poll() is None:
             os.killpg(first.pid, signal.SIGTERM)
         first.communicate(timeout=5)
+
+
+def test_rollback_preserves_new_ignored_file_at_deleted_source_path(project):
+    m, u, root, other, _, _ = project
+    # Old source has a tracked CSV template, removed by the offered version.
+    (other / "template.csv").write_text("old template")
+    git(other, "add", "-f", "template.csv")
+    git(other, "commit", "-m", "old tracked template")
+    git(other, "push")
+    git(root, "fetch", "origin")
+    git(root, "merge", "--ff-only", git(other, "rev-parse", "HEAD"))
+    git(other, "rm", "template.csv")
+    git(other, "commit", "-m", "remove template")
+    git(other, "push")
+    target = git(other, "rev-parse", "HEAD")
+
+    def prepare():
+        prepare_new(root)
+        (root / "template.csv").write_text("private new data")
+        raise RuntimeError("failed install")
+
+    with pytest.raises(m.UpdateError):
+        u.install(target, prepare=prepare, start=lambda: None, stop=lambda: None)
+    assert (root / "template.csv").read_text() == "private new data"
+    assert u.journal.exists()
+    assert_private(root)
+
+
+def test_rollback_preserves_ignored_directory_replacing_old_file(project):
+    m, u, root, other, _, _ = project
+    (other / "result").write_text("old source")
+    with (other / ".gitignore").open("a") as f:
+        f.write("result/\n")
+    git(other, "add", ".")
+    git(other, "commit", "-m", "old source file")
+    git(other, "push")
+    git(root, "fetch", "origin")
+    git(root, "merge", "--ff-only", git(other, "rev-parse", "HEAD"))
+    git(other, "rm", "result")
+    git(other, "commit", "-m", "remove source file")
+    git(other, "push")
+
+    def prepare():
+        prepare_new(root)
+        (root / "result").mkdir()
+        (root / "result/private.txt").write_text("keep me")
+        raise RuntimeError("failed install")
+
+    with pytest.raises(m.UpdateError):
+        u.install(
+            git(other, "rev-parse", "HEAD"),
+            prepare=prepare,
+            start=lambda: None,
+            stop=lambda: None,
+        )
+    assert (root / "result/private.txt").read_text() == "keep me"
+    assert u.journal.exists()
+    assert_private(root)
+
+
+def test_timed_out_installer_cannot_write_after_rollback_would_begin(project):
+    import os
+    import time
+
+    m, u, root, *_ = project
+    marker = root.parent / "late-write"
+    command = [
+        "/bin/bash",
+        "-c",
+        '(trap "" TERM; sleep 0.8; printf late > "$1") & wait',
+        "fixture",
+        str(marker),
+    ]
+    with pytest.raises(subprocess.TimeoutExpired):
+        m.run_owned_step(u, command, dict(os.environ), timeout=0.05)
+    time.sleep(0.9)
+    assert not marker.exists()
+    assert not u.activity.exists()
+
+
+def test_successful_installer_does_not_leave_background_writers(project):
+    import os
+    import time
+
+    m, u, root, *_ = project
+    marker = root.parent / "late-background-write"
+    command = [
+        "/bin/bash",
+        "-c",
+        '(trap "" TERM; sleep 0.8; printf late > "$1") & exit 0',
+        "fixture",
+        str(marker),
+    ]
+    assert m.run_owned_step(u, command, dict(os.environ), timeout=3) == 0
+    time.sleep(0.9)
+    assert not marker.exists()
+    assert not u.activity.exists()
+
+
+def test_interrupted_installer_is_quiesced_before_recovery(project, tmp_path):
+    import time
+
+    m, u, root, *_ = project
+    marker = tmp_path / "after-crash-write"
+    ready = tmp_path / "installer-ready"
+    driver = """import importlib.util,sys,os
+from pathlib import Path
+s=importlib.util.spec_from_file_location('update_driver',sys.argv[1]);m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
+u=m.Updater(Path(sys.argv[2]),Path(sys.argv[3]))
+m.run_owned_step(u,['/bin/bash','-c','printf ready > "$2"; sleep 1.2; printf late > "$1"','fixture',sys.argv[4],sys.argv[5]],dict(os.environ),timeout=5)
+"""
+    worker = subprocess.Popen(
+        [
+            sys._base_executable,
+            "-c",
+            driver,
+            str(SOURCE),
+            str(root),
+            str(tmp_path / "state"),
+            str(marker),
+            str(ready),
+        ],
+        start_new_session=True,
+    )
+    try:
+        deadline = time.monotonic() + 5
+        while (
+            not ready.exists() and worker.poll() is None and time.monotonic() < deadline
+        ):
+            time.sleep(0.02)
+        assert ready.exists()
+        worker.kill()
+        worker.wait(timeout=3)
+        m.finish_interrupted_step(u)
+        time.sleep(1.3)
+        assert not marker.exists()
+        assert not u.activity.exists()
+    finally:
+        if worker.poll() is None:
+            worker.kill()
+            worker.wait(timeout=3)
+        if u.activity.exists():
+            m.finish_interrupted_step(u)
+
+
+def test_stale_activity_never_kills_unrelated_process(project):
+    import os
+
+    m, u, root, *_ = project
+    unrelated = subprocess.Popen(["/bin/sleep", "5"], start_new_session=True)
+    try:
+        u.state.mkdir(parents=True)
+        record = {
+            "root": str(root.resolve()),
+            "pid": unrelated.pid,
+            "start": m.process_details(unrelated.pid)[0],
+            "token": "a" * 32,
+        }
+        u.activity.write_text(json.dumps(record))
+        with pytest.raises(m.UpdateError):
+            m.finish_interrupted_step(u)
+        assert unrelated.poll() is None
+        os.kill(unrelated.pid, 0)
+    finally:
+        unrelated.terminate()
+        unrelated.wait(timeout=3)
+
+
+def test_real_repository_tree_allows_its_environment_templates(tmp_path):
+    m = module()
+    u = m.Updater(SOURCE.parent.parent, tmp_path / "state")
+    u.guard_checkout("HEAD")  # Read-only check of the actual published file layout.
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        ".env",
+        "backend/.env.production",
+        "backend/private/.env.example/settings.txt",
+        "Data/private.txt",
+    ],
+)
+def test_template_exception_does_not_allow_local_settings_or_data(project, name):
+    m, u, root, other, old, _ = project
+    path = other / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("private fixture")
+    git(other, "add", "-f", name)
+    git(other, "commit", "-m", "protected path")
+    git(other, "push")
+    with pytest.raises(m.UpdateError):
+        u.install(
+            git(other, "rev-parse", "HEAD"),
+            prepare=lambda: None,
+            start=lambda: None,
+            stop=lambda: None,
+        )
+    assert git(root, "rev-parse", "HEAD") == old
+    assert_private(root)
+
+
+def test_recovery_resumes_between_source_checkout_and_main_ref_restore(project):
+    _, u, root, _, old, target = project
+    j = u.begin(target)
+    (root / ".venv").rename(u.backup(j) / "venv")
+    (root / "frontend/node_modules").rename(u.backup(j) / "modules")
+    git(root, "merge", "--ff-only", target)
+    j["phase"] = "installing"
+    j["restoring_source"] = True
+    u.write_journal(j)
+    git(root, "checkout", "--detach", old)
+    starts = []
+    u.recover(
+        start=lambda: starts.append(git(root, "rev-parse", "HEAD")), stop=lambda: None
+    )
+    assert starts == [old]
+    assert git(root, "branch", "--show-current") == "main"
+    assert (root / ".venv/sentinel").read_text() == "old"
+    assert_private(root)
+
+
+def test_service_start_can_hand_off_its_intended_children(project):
+    import os
+    import time
+
+    m, u, root, *_ = project
+    marker = root.parent / "service-handoff"
+    command = [
+        "/bin/bash",
+        "-c",
+        '(sleep .35; printf running > "$1") & exit 0',
+        "fixture",
+        str(marker),
+    ]
+    assert (
+        m.run_owned_step(
+            u, command, dict(os.environ), timeout=3, preserve_children=True
+        )
+        == 0
+    )
+    deadline = time.monotonic() + 3
+    while not marker.exists() and time.monotonic() < deadline:
+        time.sleep(0.03)
+    assert marker.read_text() == "running"
+    assert not u.activity.exists()

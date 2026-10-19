@@ -3275,13 +3275,18 @@ function App() {
 
   useEffect(() => {
     let previousStatus: StreamSnapshot['status'] | null = null
+    let previousConnection: string | null | undefined
     const connection = connectLiveStream(STREAM_WS_URL, {
       snapshot(snapshot) {
+        const firstSnapshot = previousStatus === null
         const started = snapshot.status === 'streaming' && previousStatus !== 'streaming'
         const reset = snapshot.status === 'idle' && previousStatus !== 'idle'
+        const replaced = snapshot.connection_id !== undefined && previousConnection !== undefined
+          && snapshot.connection_id !== previousConnection
         previousStatus = snapshot.status
-        if (reset) resetLiveFeedback()
-        if (started) {
+        if (snapshot.connection_id !== undefined) previousConnection = snapshot.connection_id
+        if (firstSnapshot || reset || replaced) resetLiveFeedback()
+        if (started || (replaced && snapshot.status === 'streaming')) {
           exitReplay()
         }
         setStream(snapshot)

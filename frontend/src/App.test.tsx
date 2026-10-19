@@ -363,15 +363,42 @@ it('clears observer feedback history on a shared reset', async () => {
     calm_score: .5, source_timestamp: Date.now() / 1000, features: {}, flags: [] })
   render(<App />)
   fireEvent.click(screen.getByRole('button', { name: 'Feedback Lab' }))
-  const trend = () => screen.getByRole('img', { name: 'Feedback trend history' }).querySelector('.calm-trend__line')!
-  await waitFor(() => expect(trend().getAttribute('d')).not.toBe(''), { timeout: 2500 })
   await act(async () => {
     sockets.at(-1)?.onmessage?.(new MessageEvent('message', {
       data: JSON.stringify({ ...preparedBoard, status: 'streaming', sample_count: 0, timestamps: [], channels: [] }),
     }))
+  })
+  const trend = () => screen.getByRole('img', { name: 'Feedback trend history' }).querySelector('.calm-trend__line')!
+  await waitFor(() => expect(trend().getAttribute('d')).not.toBe(''), { timeout: 2500 })
+  await act(async () => {
     sockets.at(-1)?.onmessage?.(new MessageEvent('message', {
       data: JSON.stringify({ ...idleBoard, sample_count: 0, timestamps: [], channels: [] }),
     }))
   })
   expect(trend().getAttribute('d')).toBe('')
+})
+
+it.each([false, true])('detects a replaced connection after an outage without missed idle frames (replacement=%s)', async replaced => {
+  vi.stubEnv('VITE_OPENBCI_AUTOCONNECT_SERIAL', '')
+  apiMock.board.mockResolvedValue({ ...preparedBoard, status: 'streaming', connection_id: 'first-connection' })
+  const saved = { ...emptyRecording, session_id: 'saved-reconnect', label: 'Saved practice', sampling_rate: 250, sample_count: 2 }
+  apiMock.recordings.mockResolvedValue([saved])
+  apiMock.recordingPreview.mockResolvedValue({ recording: saved, offset: 0, total_rows: 2, row_count: 2, headers: ['timestamp', 'Fp1'], rows: [[1, 2], [2, 3]] })
+  apiMock.recordingAnalysis.mockResolvedValue({ recording: saved, offset: 0, total_rows: 2, sample_count: 2, sampling_rate: 250, bandpass_low_hz: 1, bandpass_high_hz: 45, channels: [] })
+  render(<App />)
+  await screen.findByRole('button', { name: 'Preview' })
+  async function broadcast(connection: string) {
+    await act(async () => {
+      sockets.at(-1)?.onmessage?.(new MessageEvent('message', { data: JSON.stringify({
+        ...preparedBoard, status: 'streaming', connection_id: connection, sample_count: 0, timestamps: [], channels: [],
+      }) }))
+    })
+  }
+  await broadcast('first-connection')
+  fireEvent.click(screen.getByRole('button', { name: 'Preview' }))
+  await screen.findByText('Replay window loaded')
+  await act(async () => { sockets.at(-1)?.onerror?.() })
+  await waitFor(() => expect(sockets).toHaveLength(2), { timeout: 2000 })
+  await broadcast(replaced ? 'replacement-connection' : 'first-connection')
+  expect(Boolean(screen.queryByText('Replay window loaded'))).toBe(!replaced)
 })

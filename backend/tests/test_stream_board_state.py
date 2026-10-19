@@ -19,13 +19,21 @@ def test_stream_reports_board_metadata_through_every_connection_transition(tmp_p
         service.connect(BoardConnectionRequest(board=BoardKind.synthetic))
         prepared = assert_shared_state(service)
         assert prepared.status == BoardStatus.prepared
+        connection = prepared.connection_id
+        assert connection
         assert prepared.eeg_names and prepared.eeg_channels
         service.start_stream()
-        assert assert_shared_state(service).status == BoardStatus.streaming
+        live = assert_shared_state(service)
+        assert live.status == BoardStatus.streaming and live.connection_id == connection
         service.stop_stream()
-        assert assert_shared_state(service).status == BoardStatus.prepared
+        stopped = assert_shared_state(service)
+        assert stopped.status == BoardStatus.prepared and stopped.connection_id == connection
         service.disconnect()
-        assert assert_shared_state(service).eeg_channels == []
+        idle = assert_shared_state(service)
+        assert idle.eeg_channels == [] and idle.connection_id is None
+        service.connect(BoardConnectionRequest(board=BoardKind.synthetic))
+        replacement = assert_shared_state(service).connection_id
+        assert replacement and replacement != connection
     finally:
         service.disconnect()
 

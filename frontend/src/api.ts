@@ -55,6 +55,7 @@ export type SerialPortInfo = {
 
 export type BoardState = {
   status: BoardStatus
+  connection_id?: string | null
   board?: BoardKind | null
   board_id?: number | null
   serial_port?: string | null
@@ -72,6 +73,7 @@ export type ChannelSnapshot = {
 
 export type StreamSnapshot = {
   status: BoardStatus
+  connection_id?: string | null
   board?: BoardKind | null
   board_id?: number | null
   // Optional while talking to an older backend without shared device metadata.

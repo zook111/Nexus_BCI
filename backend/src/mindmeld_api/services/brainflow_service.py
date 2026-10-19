@@ -8,6 +8,7 @@ from pathlib import Path
 from re import sub
 from tempfile import NamedTemporaryFile
 from time import monotonic
+from uuid import uuid4
 
 import numpy as np
 from brainflow.board_shim import BoardIds, BoardShim, BrainFlowInputParams
@@ -84,6 +85,7 @@ class BrainFlowBoardService:
         self._board_kind: BoardKind | None = None
         self._board_id: int | None = None
         self._serial_port: str | None = None
+        self._connection_id: str | None = None
         self._status = BoardStatus.idle
         self._last_error: str | None = None
         self._recording_thread: threading.Thread | None = None
@@ -158,6 +160,7 @@ class BrainFlowBoardService:
             self._board_kind = request.board
             self._board_id = board_id
             self._serial_port = request.serial_port
+            self._connection_id = uuid4().hex
             self._status = BoardStatus.prepared
             self._last_error = None
             return self._state_locked()
@@ -910,6 +913,7 @@ class BrainFlowBoardService:
         self._reconcile_board_locked()
         return BoardStateResponse(
             status=self._status,
+            connection_id=self._connection_id,
             board=self._board_kind,
             board_id=self._board_id,
             serial_port=self._serial_port,
@@ -1009,6 +1013,7 @@ class BrainFlowBoardService:
                 self._board_kind = None
                 self._board_id = None
                 self._serial_port = None
+                self._connection_id = None
                 self._status = BoardStatus.idle
                 self._last_error = None
             else:

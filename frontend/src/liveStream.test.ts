@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { connectLiveStream, parseStreamSnapshot } from './liveStream'
+import { connectLiveStream, parseStreamSnapshot, sharedBoardState } from './liveStream'
 
 const sockets: FakeSocket[] = []
 class FakeSocket {
@@ -65,4 +65,31 @@ describe('live stream recovery', () => {
 it('parses optional board metadata without trusting an unchecked cast', () => {
   expect(parseStreamSnapshot(JSON.stringify({ ...frame, board: 'cyton_daisy', sampling_rate: 125, board_id: 2 }))).toMatchObject({ board: 'cyton_daisy', sampling_rate: 125 })
   expect(() => parseStreamSnapshot(JSON.stringify({ ...frame, channels: [{ index: 1, label: 'C3', samples: [null] }] }))).toThrow()
+})
+
+it('validates shared device metadata before exposing it to controls', () => {
+  const metadata = { serial_port: '/dev/cu.usbserial-EXAMPLE', eeg_channels: [1], eeg_names: ['C3'] }
+  expect(parseStreamSnapshot(JSON.stringify({ ...frame, ...metadata }))).toMatchObject(metadata)
+  for (const invalid of [
+    { ...metadata, serial_port: 123 },
+    { ...metadata, connection_id: 123 },
+    { ...metadata, connection_id: '' },
+    { ...metadata, eeg_channels: [1.5] },
+    { ...metadata, eeg_channels: [-1] },
+    { ...metadata, eeg_names: [123] },
+    { ...metadata, eeg_names: [] },
+    { ...metadata, eeg_names: undefined },
+  ]) {
+    expect(() => parseStreamSnapshot(JSON.stringify({ ...frame, ...invalid }))).toThrow()
+  }
+})
+
+it('preserves board identity on repeated frames and accepts older servers', () => {
+  const board = {
+    status: 'streaming' as const, board: 'cyton' as const,
+    serial_port: '/dev/cu.usbserial-EXAMPLE', sampling_rate: 250,
+    eeg_channels: [1], eeg_names: ['C3'],
+  }
+  expect(sharedBoardState(board, parseStreamSnapshot(JSON.stringify({ ...frame, ...board })))).toBe(board)
+  expect(sharedBoardState(board, parseStreamSnapshot(JSON.stringify(frame)))).toBe(board)
 })

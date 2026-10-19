@@ -111,6 +111,7 @@ class CalibrationCueSpeechRequest(BaseModel):
 
 class BoardStateResponse(BaseModel):
     status: BoardStatus
+    connection_id: str | None = None
     board: BoardKind | None = None
     board_id: int | None = None
     serial_port: str | None = None
@@ -126,15 +127,12 @@ class ChannelSnapshot(BaseModel):
     samples: list[float]
 
 
-class StreamSnapshot(BaseModel):
-    status: BoardStatus
-    board: BoardKind | None = None
-    board_id: int | None = None
+class StreamSnapshot(BoardStateResponse):
+    # Every observer receives the same session metadata as /api/board, even
+    # before samples arrive or after another window stops the stream.
     sample_count: int = 0
-    sampling_rate: int | None = None
     timestamps: list[float] = Field(default_factory=list)
     channels: list[ChannelSnapshot] = Field(default_factory=list)
-    message: str | None = None
 
 
 class DspBandPower(BaseModel):

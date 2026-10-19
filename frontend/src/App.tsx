@@ -53,7 +53,7 @@ import {
 import { DoctorDemo } from './doctorDemo/DoctorDemo'
 import { ExperimentLab } from './experimentLab/ExperimentLab'
 import { StudentHelp } from './StudentHelp'
-import { connectLiveStream } from './liveStream'
+import { connectLiveStream, sharedBoardState } from './liveStream'
 import type {
   BoardKind,
   BoardState,
@@ -2908,7 +2908,7 @@ async function loadBoardContext() {
 
 function App() {
   const [health, setHealth] = useState<HealthResponse | null>(null)
-  const [ports, setPorts] = useState<SerialPortInfo[]>([])
+  const [ports, setPorts] = useState<Array<SerialPortInfo & { sharedSessionOnly?: boolean }>>([])
   const [board, setBoard] = useState<BoardState>(emptyBoard)
   const [stream, setStream] = useState<StreamSnapshot>(emptyStream)
   const [recording, setRecording] = useState<RecordingState>(emptyRecording)
@@ -2952,11 +2952,38 @@ function App() {
   const [calibrationMarkers, setCalibrationMarkers] = useState<CalibrationMarker[]>([])
   const [error, setError] = useState<string | null>(null)
   const liveConnectionRef = useRef<ReturnType<typeof connectLiveStream> | null>(null)
+  const loadedBoardRef = useRef<BoardState | null>(null)
+  const calibrationRunningRef = useRef(false)
+  const calibrationSourceRef = useRef<{
+    board: BoardState
+    recording: Pick<RecordingState, 'session_id' | 'label' | 'sample_count'> | null
+    interrupted: boolean
+  } | null>(null)
+  const liveErrorRef = useRef<string | null>(null)
   const dspRef = useRef<DspSummary | null>(null)
   const signalQualityRef = useRef<SignalQuality | null>(null)
   const streamRef = useRef<StreamSnapshot>(emptyStream)
+  const replayRequestRef = useRef(0)
   const calmRef = useRef<CalmFeatureResponse | null>(null)
   const calibrationStepIndexRef = useRef(0)
+  const exitReplay = useCallback(() => {
+    replayRequestRef.current += 1
+    setReplay(null)
+    setReplayAnalysis(null)
+    setReplayBusy(false)
+  }, [])
+  const resetLiveFeedback = useCallback(() => {
+    setCalm(null)
+    setDsp(null)
+    setSignalQuality(null)
+    calmRef.current = null
+    dspRef.current = null
+    signalQualityRef.current = null
+    setCalmTrend([])
+    setFocusTrend([])
+    setClarityTrend([])
+    setCalmBaseline(emptyCalmBaseline)
+  }, [])
   const dspValidationMessage = validateDspControls({
     windowSize: dspWindowSize,
     bandpassLowHz: dspBandpassLowHz,
@@ -2980,6 +3007,7 @@ function App() {
         await loadBoardContext()
       setHealth(healthResponse)
       setPorts(portResponse)
+      loadedBoardRef.current = boardResponse
       setBoard(boardResponse)
       setRecording(recordingResponse)
       setRecordings(recordingsResponse)
@@ -3122,6 +3150,8 @@ function App() {
   )
 
   const stopCalibrationProtocol = useCallback(() => {
+    if (calibrationRunningRef.current && calibrationSourceRef.current) calibrationSourceRef.current.interrupted = true
+    calibrationRunningRef.current = false
     setCalibrationStatus((current) => (current === 'running' ? 'complete' : current))
     setCalibrationStepStartedAt(null)
     setCalibrationElapsedSeconds(0)
@@ -3129,6 +3159,9 @@ function App() {
   }, [playCalibrationCue])
 
   const startCalibrationProtocol = useCallback(() => {
+    calibrationRunningRef.current = true
+    calibrationSourceRef.current = { board, interrupted: false, recording: recording.active
+      ? { session_id: recording.session_id, label: recording.label, sample_count: recording.sample_count } : null }
     const firstStep = calibrationProtocol[0]
     const startedAt = Date.now()
     calibrationStepIndexRef.current = 0
@@ -3140,11 +3173,13 @@ function App() {
     setCalibrationMarkers([marker])
     persistCalibrationMarker(marker)
     playCalibrationCue(firstStep.cue)
-  }, [makeCalibrationMarker, persistCalibrationMarker, playCalibrationCue])
+  }, [board, recording, makeCalibrationMarker, persistCalibrationMarker, playCalibrationCue])
 
   const advanceCalibrationStep = useCallback(() => {
+    if (!calibrationRunningRef.current) return
     const nextIndex = calibrationStepIndexRef.current + 1
     if (nextIndex >= calibrationProtocol.length) {
+      calibrationRunningRef.current = false
       setCalibrationStatus('complete')
       setCalibrationStepStartedAt(null)
       setCalibrationElapsedSeconds(0)
@@ -3163,10 +3198,16 @@ function App() {
   }, [captureCalibrationMarker, playCalibrationCue])
 
   const exportCalibrationMarkers = useCallback(() => {
+    const source = calibrationSourceRef.current
     const payload = {
       exported_at: new Date().toISOString(),
-      board,
-      recording: recording.active
+      board: source?.board ?? board,
+      interrupted: source?.interrupted ?? false,
+      recording: source ? source.recording && {
+        ...source.recording,
+        sample_count_at_start: source.recording.sample_count,
+        sample_count: recording.session_id === source.recording.session_id ? recording.sample_count : null,
+      } : recording.active
         ? {
             session_id: recording.session_id,
             label: recording.label,
@@ -3206,6 +3247,7 @@ function App() {
         if (cancelled) return
         setHealth(healthResponse)
         setPorts(portResponse)
+        loadedBoardRef.current = boardResponse
         setBoard(boardResponse)
         setRecording(recordingResponse)
         setRecordings(recordingsResponse)
@@ -3215,14 +3257,20 @@ function App() {
         if (setup.connection) {
           try {
             const connectedBoard = await api.connect(setup.connection)
-            if (!cancelled) setBoard(connectedBoard)
+            if (!cancelled) {
+              loadedBoardRef.current = connectedBoard
+              setBoard(connectedBoard)
+            }
           } catch (connectError) {
             if (!cancelled) {
               const failureMessage = formatBoardActionError(connectError)
               setError(failureMessage)
               try {
                 const failedBoard = await api.board()
-                if (!cancelled) setBoard(failedBoard)
+                if (!cancelled) {
+                  loadedBoardRef.current = failedBoard
+                  setBoard(failedBoard)
+                }
               } catch {
                 if (!cancelled) {
                   setBoard({
@@ -3254,30 +3302,79 @@ function App() {
   }, [])
 
   useEffect(() => {
+    let previousStatus: StreamSnapshot['status'] | null = null
+    let previousConnection: string | null | undefined
     const connection = connectLiveStream(STREAM_WS_URL, {
       snapshot(snapshot) {
+        if (previousStatus === null && loadedBoardRef.current) {
+          previousStatus = loadedBoardRef.current.status
+          previousConnection = loadedBoardRef.current.connection_id
+        }
+        const started = previousStatus !== null && snapshot.status === 'streaming' && previousStatus !== 'streaming'
+        const reset = previousStatus !== null && snapshot.status === 'idle' && previousStatus !== 'idle'
+        const replaced = snapshot.connection_id !== undefined && previousConnection !== undefined
+          && snapshot.connection_id !== previousConnection
+        previousStatus = snapshot.status
+        if (snapshot.connection_id !== undefined) previousConnection = snapshot.connection_id
+        if (reset || replaced) {
+          resetLiveFeedback()
+          if (calibrationRunningRef.current) {
+            calibrationRunningRef.current = false
+            if (calibrationSourceRef.current) calibrationSourceRef.current.interrupted = true
+            setCalibrationStatus('idle')
+            setCalibrationStepStartedAt(null)
+            setCalibrationElapsedSeconds(0)
+            setCalibrationStepIndex(0)
+            calibrationStepIndexRef.current = 0
+            window.speechSynthesis?.cancel()
+          }
+        }
+        if (started || (replaced && snapshot.status === 'streaming')) {
+          exitReplay()
+        }
         setStream(snapshot)
+        setBoard(current => sharedBoardState(current, snapshot))
+        const activePort = snapshot.status === 'prepared' || snapshot.status === 'streaming'
+          ? snapshot.serial_port : null
+        setPorts(current => {
+          const next = current.filter(port => !port.sharedSessionOnly || port.device === activePort)
+          if (activePort && !next.some(port => port.device === activePort)) {
+            return [...next, { device: activePort, transport: 'unknown', recommended: false,
+              rank: 0, message: 'Active backend serial port', sharedSessionOnly: true }]
+          }
+          return next.length === current.length ? current : next
+        })
+        if (snapshot.eeg_channels && snapshot.eeg_names && snapshot.board
+          && (snapshot.status === 'prepared' || snapshot.status === 'streaming')) {
+          setSelectedBoard(snapshot.board)
+          setSelectedPort(snapshot.serial_port ?? '')
+        }
         if (snapshot.status === 'error') {
           setBoard(current => current.status === 'streaming' || current.status === 'prepared'
             ? { ...current, status: 'error', message: snapshot.message }
             : current)
-          setError(snapshot.message || 'Signal paused. Reset and connect again.')
+          liveErrorRef.current = snapshot.message || 'Signal paused. Reset and connect again.'
+          setError(liveErrorRef.current)
         } else {
-          setError(current => current?.startsWith('Live stream paused.') ? null : current)
+          const previousLiveError = liveErrorRef.current
+          liveErrorRef.current = null
+          setError(current => current === previousLiveError ? null : current)
           if (snapshot.status === 'idle') setBoard(current => current.status === 'idle' ? current : emptyBoard)
         }
       },
       unavailable(message) {
         setStream(current => ({ ...current, status: 'error', sample_count: 0, timestamps: [], channels: [] }))
+        liveErrorRef.current = message
         setError(message)
       },
     })
     liveConnectionRef.current = connection
     return () => {
       liveConnectionRef.current = null
+      replayRequestRef.current += 1
       connection.close()
     }
-  }, [])
+  }, [exitReplay, resetLiveFeedback])
 
   useEffect(() => {
     if (!recording.active) return undefined
@@ -3319,6 +3416,8 @@ function App() {
 
     const interval = window.setInterval(() => {
       if (board.status !== 'streaming') {
+        if (calibrationRunningRef.current && calibrationSourceRef.current) calibrationSourceRef.current.interrupted = true
+        calibrationRunningRef.current = false
         setCalibrationStatus('idle')
         setCalibrationStepStartedAt(null)
         setCalibrationElapsedSeconds(0)
@@ -3374,6 +3473,7 @@ function App() {
     }
   }, [
     board.status,
+    board.connection_id,
     replay,
     dspWindowSize,
     dspBandpassLowHz,
@@ -3433,7 +3533,7 @@ function App() {
       cancelled = true
       window.clearInterval(interval)
     }
-  }, [activeView, board.status, lineFrequencyHz, replay])
+  }, [activeView, board.status, board.connection_id, lineFrequencyHz, replay])
 
   useEffect(() => {
     if (board.status !== 'streaming' || replay) {
@@ -3464,7 +3564,7 @@ function App() {
       cancelled = true
       window.clearInterval(interval)
     }
-  }, [board.status, lineFrequencyHz, replay])
+  }, [board.status, board.connection_id, lineFrequencyHz, replay])
 
   const visibleChannels = useMemo(() => stream.channels.slice(0, 8), [stream.channels])
   const replayChannels = useMemo(() => buildReplayChannels(replay), [replay])
@@ -3595,21 +3695,21 @@ function App() {
     setError(null)
     try {
       const next = await action()
+      loadedBoardRef.current = next
       setBoard(next)
       if (next.status === 'idle') {
-        setCalm(null)
-        setCalmTrend([])
-        setFocusTrend([])
-        setClarityTrend([])
-        setCalmBaseline(emptyCalmBaseline)
+        resetLiveFeedback()
       }
       if (next.status === 'streaming') {
-        setReplay(null)
-        setReplayAnalysis(null)
+        exitReplay()
       }
     } catch (actionError) {
       setError(formatBoardActionError(actionError))
-      try { setBoard(await api.board()) } catch { /* Retain the recovery message. */ }
+      try {
+        const failedBoard = await api.board()
+        loadedBoardRef.current = failedBoard
+        setBoard(failedBoard)
+      } catch { /* Retain the recovery message. */ }
     } finally {
       setBusy(false)
     }
@@ -3654,6 +3754,7 @@ function App() {
     windowSize = replayWindowSize,
     view: 'console' | 'demo' = activeReplayView,
   ) {
+    const request = ++replayRequestRef.current
     const safeOffset = Math.max(0, offset)
     setReplayBusy(true)
     setError(null)
@@ -3662,13 +3763,16 @@ function App() {
         api.recordingPreview(sessionId, windowSize, safeOffset),
         api.recordingAnalysis(sessionId, windowSize, safeOffset, lineFrequencyHz),
       ])
+      if (request !== replayRequestRef.current) return
       setReplay(nextReplay)
       setReplayAnalysis(nextAnalysis)
       setActiveView(view)
     } catch (previewError) {
-      setError(previewError instanceof Error ? previewError.message : 'Preview request failed')
+      if (request === replayRequestRef.current) {
+        setError(previewError instanceof Error ? previewError.message : 'Preview request failed')
+      }
     } finally {
-      setReplayBusy(false)
+      if (request === replayRequestRef.current) setReplayBusy(false)
     }
   }
 
@@ -3786,8 +3890,7 @@ function App() {
       await api.deleteRecording(sessionId)
       setRecordings((current) => current.filter((saved) => saved.session_id !== sessionId))
       if (replay?.recording.session_id === sessionId) {
-        setReplay(null)
-        setReplayAnalysis(null)
+        exitReplay()
       }
       if (recording.session_id === sessionId) {
         setRecording(emptyRecording)
@@ -3970,7 +4073,7 @@ function App() {
                   }),
                 )
               }
-              disabled={busy || deviceSelectionLocked || (canUseSerialPort && !selectedPort)}
+              disabled={busy || deviceSelectionLocked || (canUseSerialPort && !selectedPortInfo)}
             >
               <PlugZap size={16} />
               Connect
@@ -4098,10 +4201,7 @@ function App() {
                   <button
                     type="button"
                     className="ghost-button"
-                    onClick={() => {
-                      setReplay(null)
-                      setReplayAnalysis(null)
-                    }}
+                    onClick={exitReplay}
                   >
                     <Radio size={14} />
                     Live

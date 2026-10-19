@@ -2956,8 +2956,15 @@ function App() {
   const dspRef = useRef<DspSummary | null>(null)
   const signalQualityRef = useRef<SignalQuality | null>(null)
   const streamRef = useRef<StreamSnapshot>(emptyStream)
+  const replayRequestRef = useRef(0)
   const calmRef = useRef<CalmFeatureResponse | null>(null)
   const calibrationStepIndexRef = useRef(0)
+  const exitReplay = useCallback(() => {
+    replayRequestRef.current += 1
+    setReplay(null)
+    setReplayAnalysis(null)
+    setReplayBusy(false)
+  }, [])
   const dspValidationMessage = validateDspControls({
     windowSize: dspWindowSize,
     bandpassLowHz: dspBandpassLowHz,
@@ -3261,8 +3268,7 @@ function App() {
         const started = snapshot.status === 'streaming' && previousStatus !== 'streaming'
         previousStatus = snapshot.status
         if (started) {
-          setReplay(null)
-          setReplayAnalysis(null)
+          exitReplay()
         }
         setStream(snapshot)
         setBoard(current => sharedBoardState(current, snapshot))
@@ -3303,9 +3309,10 @@ function App() {
     liveConnectionRef.current = connection
     return () => {
       liveConnectionRef.current = null
+      replayRequestRef.current += 1
       connection.close()
     }
-  }, [])
+  }, [exitReplay])
 
   useEffect(() => {
     if (!recording.active) return undefined
@@ -3632,8 +3639,7 @@ function App() {
         setCalmBaseline(emptyCalmBaseline)
       }
       if (next.status === 'streaming') {
-        setReplay(null)
-        setReplayAnalysis(null)
+        exitReplay()
       }
     } catch (actionError) {
       setError(formatBoardActionError(actionError))
@@ -3682,6 +3688,7 @@ function App() {
     windowSize = replayWindowSize,
     view: 'console' | 'demo' = activeReplayView,
   ) {
+    const request = ++replayRequestRef.current
     const safeOffset = Math.max(0, offset)
     setReplayBusy(true)
     setError(null)
@@ -3690,13 +3697,16 @@ function App() {
         api.recordingPreview(sessionId, windowSize, safeOffset),
         api.recordingAnalysis(sessionId, windowSize, safeOffset, lineFrequencyHz),
       ])
+      if (request !== replayRequestRef.current) return
       setReplay(nextReplay)
       setReplayAnalysis(nextAnalysis)
       setActiveView(view)
     } catch (previewError) {
-      setError(previewError instanceof Error ? previewError.message : 'Preview request failed')
+      if (request === replayRequestRef.current) {
+        setError(previewError instanceof Error ? previewError.message : 'Preview request failed')
+      }
     } finally {
-      setReplayBusy(false)
+      if (request === replayRequestRef.current) setReplayBusy(false)
     }
   }
 
@@ -3814,8 +3824,7 @@ function App() {
       await api.deleteRecording(sessionId)
       setRecordings((current) => current.filter((saved) => saved.session_id !== sessionId))
       if (replay?.recording.session_id === sessionId) {
-        setReplay(null)
-        setReplayAnalysis(null)
+        exitReplay()
       }
       if (recording.session_id === sessionId) {
         setRecording(emptyRecording)
@@ -4126,10 +4135,7 @@ function App() {
                   <button
                     type="button"
                     className="ghost-button"
-                    onClick={() => {
-                      setReplay(null)
-                      setReplayAnalysis(null)
-                    }}
+                    onClick={exitReplay}
                   >
                     <Radio size={14} />
                     Live

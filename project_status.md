@@ -49,6 +49,7 @@ Clean Python 3.12 / Node 24 setup, backend Ruff and 161 tests, frontend lint and
 - PR #8 follow-up review: a shared transition into streaming now clears saved replay and its analysis, matching the local Start action. Repeated streaming frames preserve an intentionally opened replay. The regression test covers both paths.
 - An observer now lists a shared session's active serial port even if the dongle appeared after that tab loaded. It is labelled as an active backend port without inventing a hardware recommendation; no extra connect action is issued.
 - Session-only port options are removed on reset, error or port changes. Connect requires a currently listed selected port, so a removed fallback cannot silently remain connectable. Discovered ports and the operator's idle board choice remain intact.
+- Exiting replay also invalidates pending preview/analysis requests. A late response or error cannot restore saved data or overwrite the live view after a shared start. Requests intentionally begun during a running stream remain supported.
 
 ## Known limits and next steps
 

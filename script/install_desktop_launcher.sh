@@ -5,7 +5,7 @@ set -eu
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 LAUNCHER_SCRIPT="$ROOT_DIR/script/build_and_run.sh"
-ICON_SOURCE="$ROOT_DIR/assets/macos/nexus-launcher-icon.png"
+ICON_SOURCE="$ROOT_DIR/assets/macos/eeg-lab-icon.png"
 DESKTOP_DIR="${MINDMELD_DESKTOP_DIR:-$HOME/Desktop}"
 TRASH_DIR="${MINDMELD_TRASH_DIR:-$HOME/.Trash}"
 APP_PATH="${MINDMELD_DESKTOP_APP:-$DESKTOP_DIR/Nexus Server.app}"

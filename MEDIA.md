@@ -2,6 +2,10 @@
 
 Nexus BCI is a local EEG workspace for education and research. Original Nexus SVG branding, its rendered launcher icon, synthetic screenshots and project documentation are included with the MIT-licensed software.
 
+## EEG Lab Dock icon
+
+The [EEG Lab Dock icon](assets/macos/eeg-lab-icon.png) was generated for this project with OpenAI's built-in image-generation tool on 19 October 2026. The [generation prompt](assets/macos/eeg-lab-icon.prompt.txt) records the design and provenance. This icon is included with the original brand assets under the project's MIT licence. The launcher installer derives its native ICNS sizes from this transparent 1024-pixel PNG.
+
 ## Bundled generated audio
 
 The project maintainer confirmed permission to redistribute the bundled MP3 music and spoken cues for this public repository on **10 October 2026**. The audio was generated for the project, rather than recorded from participants.

@@ -13,6 +13,7 @@ Follow the [Intel/Ventura setup PDF](intel-ventura-setup.pdf), or use the [copya
 Finish the practice steps before moving on:
 
 - Double-click Nexus Server. The browser opens the app at [http://localhost:5173](http://localhost:5173).
+- To keep a shortcut in the Mac **Dock**, drag **Nexus Server** from the Desktop onto the app side of the Dock. The launcher opens the workspace in your browser; the browser window keeps its browser icon.
 - In Console, choose **Synthetic → Connect → Start**. Changing waveforms show that simulated samples are arriving.
 - Record a short practice session, capture setup, save it and reopen it with **Preview**. You should see saved samples and be able to move through the recording.
 - Stop and Reset the board when finished. Double-click Nexus Server again to stop the services. Closing the browser alone does not stop them.

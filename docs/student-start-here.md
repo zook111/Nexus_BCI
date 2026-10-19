@@ -54,7 +54,7 @@ Try the matching step below. The installed app's **Help** tab also contains trou
 | --- | --- |
 | `command not found` during setup | Open a new Terminal after installing Python and Node. Check the three version commands in the setup guide. If one is still missing, repeat that standard installer step. |
 | `nexus` folder already exists | Keep it. Check that it is this project, then follow the setup guide's existing-folder instructions. Do not delete a folder containing recordings. |
-| Page will not load or API disconnected | Start Nexus Server once and allow startup time. Use `http://localhost:5173`, rather than opening `frontend/index.html`. If the launcher reports services already running, reload the browser. Opening the launcher again stops services. |
+| Page will not load or API disconnected | If services are stopped, start Nexus Server once and allow startup time. If they are already running, reload the browser. Use `http://localhost:5173` by default, or your configured frontend port, rather than opening `frontend/index.html`. Opening the launcher again stops running services. |
 | Port 8000 or 5173 is occupied | Ask your helper to identify and stop the other application. Do not force-quit an unfamiliar process. |
 | No recommended USB port | Check the dongle and USB-C adapter, then Refresh. Synthetic lets you test the software without a headset. |
 | `BOARD_NOT_READY_ERROR:7` | Check headset power and PC mode. Close other acquisition apps, Reset, wait about five seconds, then Connect and Start. |

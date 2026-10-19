@@ -208,6 +208,7 @@ it('opens student Help without a headset and returns to Console', async () => {
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
   }
+  expect(within(help).getByRole('link', { name: 'reopen this app' })).toHaveAttribute('href', '/')
   expect(within(help).getByRole('heading', { name: 'Your first session' })).toBeInTheDocument()
   expect(within(help).getByText('Samples freeze or the channels are noisy')).toBeInTheDocument()
   expect(within(help).getByText(/three consecutive usable quality windows before continuing/)).toBeInTheDocument()

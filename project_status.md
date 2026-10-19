@@ -6,6 +6,7 @@ Public repository: [zook111/Nexus_BCI](https://github.com/zook111/Nexus_BCI).
 
 - Added `docs/student-start-here.md`: one route through Intel/Ventura installation, synthetic practice, first-week research, physical checks and the first experiment, with expected results and common recovery steps. All four student PDFs and both copyable setup/hardware guides are tracked in the public repository.
 - README leads with the student starting page. In-app Help now bundles the hardware session packet alongside the other three PDFs, and includes first-session steps and offline troubleshooting. External research links still require internet; no standalone DMG is claimed.
+- Review correction: the in-app recovery link uses the current origin, preserving a configured frontend port. Recovery wording distinguishes starting stopped services from reloading an already-running app.
 - Verification: Node 24 frontend lint, all 110 tests and production build pass. All four development/production PDF assets match their tracked sources, and README/start-page local links resolve. The idle app Help view, expanding troubleshooting and opening the six-page hardware PDF in a separate tab were checked in the in-app browser at 1280×720; the README Help screenshot is refreshed. Backend runtime code is unchanged; required backend CI still applies. No physical-headset or independent Intel/Ventura test was performed.
 
 ## Ambient pad verification, 19 October 2026

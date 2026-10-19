@@ -50,7 +50,7 @@ export function StudentHelp() {
     <div className="panel student-help__troubleshooting">
       <h3>If you get stuck</h3>
       <details><summary>The page will not open or says API disconnected</summary>
-        <p>Double-click Nexus Server once, wait for startup, then open <a href="http://localhost:5173">http://localhost:5173</a>. Do not open frontend/index.html directly. If the launcher reports that services are already running, reload the browser. Opening the launcher again stops them.</p>
+        <p>If services are stopped, double-click Nexus Server once and wait for startup. If they are already running, reload the browser or <a href="/">reopen this app</a>. The default address is http://localhost:5173; this link keeps your current port. Do not open frontend/index.html directly. Opening the launcher again stops running services.</p>
       </details>
       <details><summary>There is no headset port, or Connect fails</summary>
         <p>Check the USB dongle, USB-C adapter and headset power/PC mode. Close other acquisition apps. Refresh the port list; choose Cyton for 8 channels and the recommended /dev/cu.* USB port. For BOARD_NOT_READY_ERROR:7, Reset, wait about five seconds, then Connect and Start. Use Synthetic to check the software without the headset.</p>

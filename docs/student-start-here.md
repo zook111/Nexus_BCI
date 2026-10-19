@@ -12,11 +12,11 @@ Follow the [Intel/Ventura setup PDF](intel-ventura-setup.pdf), or use the [copya
 
 Finish the practice steps before moving on:
 
-- Double-click Nexus Server. The browser opens the app at [http://localhost:5173](http://localhost:5173).
-- To keep a shortcut in the Mac **Dock**, drag **Nexus Server** from the Desktop onto the app side of the Dock. The launcher opens the workspace in your browser; the browser window keeps its browser icon.
+- Double-click Nexus Server and choose **Start server**. The browser opens the app at [http://localhost:5173](http://localhost:5173). If it is already running, choose **Open app**.
+- To keep a shortcut in the Mac **Dock**, drag **Nexus Server** from the Desktop onto the app side of the Dock. The launcher's **Open app** button opens the workspace in your browser; the browser window keeps its browser icon.
 - In Console, choose **Synthetic → Connect → Start**. Changing waveforms show that simulated samples are arriving.
 - Record a short practice session, capture setup, save it and reopen it with **Preview**. You should see saved samples and be able to move through the recording.
-- Stop and Reset the board when finished. Double-click Nexus Server again to stop the services. Closing the browser alone does not stop them.
+- Stop and Reset the board when finished. Open Nexus Server and choose **Stop server**. Closing the browser alone does not stop the services.
 
 Synthetic data is for learning the controls. It cannot establish that a person's brain states can be classified. Installation on this exact Intel MacBook and collection of usable physical EEG still need practical verification.
 
@@ -55,7 +55,7 @@ Before packing away, save recordings and labels, reopen the saved recordings, an
 You do not need to type Git commands after setup:
 
 1. Finish and save your experiment and recording. Stop and Reset the board.
-2. Double-click **Nexus Server** to stop the services, then open it again. Closing the browser alone does not stop them.
+2. Open **Nexus Server**, choose **Stop server**, then choose **Start server**. Closing the browser alone does not stop the services.
 3. If an update is offered, choose **Update and restart**. Keep the Mac awake and online while it installs; the workspace opens when ready. Choose **Not now** to use the installed version.
 
 Offline checks still let the installed app open. No offer can mean the check was unavailable, rather than proving the app is current. Updates are not installed during a live session, and recordings/local settings stay in place. Local code edits or conflicting processes block an update rather than being discarded.
@@ -72,7 +72,7 @@ To ask Karl for help or report a problem, follow [Report a problem on GitHub](re
 | --- | --- |
 | `command not found` during setup | Open a new Terminal after installing Python and Node. Check the three version commands in the setup guide. If one is still missing, repeat that standard installer step. |
 | `nexus` folder already exists | Keep it. Check that it is this project, then follow the setup guide's existing-folder instructions. Do not delete a folder containing recordings. |
-| Page will not load or API disconnected | If services are stopped, start Nexus Server once and allow startup time. If they are already running, reload the browser. Use `http://localhost:5173` by default, or your configured frontend port, rather than opening `frontend/index.html`. Opening the launcher again stops running services. |
+| Page will not load or API disconnected | Open Nexus Server to see whether the services are running. If stopped, choose **Start server** and allow startup time. If running, choose **Open app** or reload the browser. Use `http://localhost:5173` by default, or your configured frontend port, rather than opening `frontend/index.html`. |
 | Port 8000 or 5173 is occupied | Ask your helper to identify and stop the other application. Do not force-quit an unfamiliar process. |
 | No recommended USB port | Check the dongle and USB-C adapter, then Refresh. Synthetic lets you test the software without a headset. |
 | `BOARD_NOT_READY_ERROR:7` | Check headset power and PC mode. Close other acquisition apps, Reset, wait about five seconds, then Connect and Start. |

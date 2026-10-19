@@ -12,7 +12,7 @@ This packet is **prepared**, not a completed hardware test. Software checks and 
 - [ ] Follow the [Intel installation guide](intel-ventura-setup.md). Use macOS 13.5 or later, standard Python 3.13, Node 24, and Git. The existing pinned installer links remain in that guide.
 - [ ] In Terminal, record `uname -m`, `sw_vers -productVersion`, `python3.13 --version`, `node --version`, and `git rev-parse HEAD` from the checkout. Expect `x86_64` on this Intel Mac.
 - [ ] Use `NEXUS_PYTHON=python3.13 ./script/setup.sh` and `./script/install_desktop_launcher.sh` in a fresh checkout. Do not copy another Mac's `.venv` or `node_modules`.
-- [ ] Open **Nexus Server** once. Confirm **Nexus EEG Lab** opens at [localhost:5173](http://localhost:5173) and shows **API connected**.
+- [ ] Open **Nexus Server** and choose **Start server**. Confirm **Nexus EEG Lab** opens at [localhost:5173](http://localhost:5173) and shows **API connected**.
 - [ ] In **Console**, select **Synthetic**, then **Connect** and **Start**. Record 30 seconds as `synthetic-practice`. Use **Capture setup**, then **Save**. Open **Preview** under **Telemetry**.
 - [ ] Confirm the practice recording reopens with samples and timestamps. Mark only the intended-machine software rehearsal as passed.
 - [ ] Press **Stop**, then **Reset**, before switching to the physical board.
@@ -93,7 +93,7 @@ Complete this check for **both** training and test before evaluating a classifie
 - [ ] In **Console > Telemetry**, find the same saved session and click **Preview**. Confirm the app identifies replay, shows the expected channels, and contains samples. The replay header does not display sample rate; use the saved metadata check above for that evidence.
 - [ ] Move through the beginning, middle, and end using the replay controls. Check that positions change and that the recording is not empty, constant, or unexpectedly cut short. Replay is saved data, not a new live-quality measurement.
 - [ ] Check the second session separately. Confirm the two CSVs contain different time ranges. Retain complete app recording metadata and experiment annotations with both CSVs.
-- [ ] After saving everything, press **Stop** and **Reset** in Console. Double-click **Nexus Server** again to stop the local services. Open it later and confirm each saved session still appears and opens. Record that persistence check separately from the immediate preview.
+- [ ] After saving everything, press **Stop** and **Reset** in Console. Open **Nexus Server** and choose **Stop server**. Later, choose **Start server** and confirm each saved session still appears and opens. Record that persistence check separately from the immediate preview.
 
 ### Keep participant files local
 

@@ -35,17 +35,102 @@ mkdir -p "$(dirname "$APP_PATH")" "$ICONSET"
 APPLE_LAUNCHER_PATH="${LAUNCHER_SCRIPT//\\/\\\\}"
 APPLE_LAUNCHER_PATH="${APPLE_LAUNCHER_PATH//\"/\\\"}"
 
+# The window shows the launcher's --app-status and never stops services on launch.
+# macOS keeps one applet instance, so opening it again brings this window forward.
 cat > "$APPLESCRIPT_SOURCE" <<EOF
 on run
   set launcherPath to "$APPLE_LAUNCHER_PATH"
   set installedAppPath to POSIX path of (path to me)
-  try
-    set resultText to do shell script "/usr/bin/env NEXUS_CHECK_UPDATES=1 MINDMELD_DESKTOP_APP=" & quoted form of installedAppPath & " /bin/bash " & quoted form of launcherPath & " --toggle"
-    display notification resultText with title "Nexus Server"
-  on error errorText number errorNumber
-    display dialog "Nexus could not start or stop." & return & return & errorText with title "Nexus Server" buttons {"OK"} default button "OK" with icon stop
-  end try
+  set launcherCommand to "/bin/bash " & quoted form of launcherPath
+  repeat
+    set appStatus to my readStatus(launcherCommand)
+    if appStatus is missing value then return
+    set serverState to item 1 of appStatus
+    set statusMessage to item 4 of appStatus
+    if serverState is "running" then
+      set choice to my askStatus(statusMessage, {"Stop server", "Close", "Open app"}, "Open app")
+    else if serverState is "stopped" then
+      set choice to my askStatus(statusMessage, {"Close", "Start server"}, "Start server")
+    else if serverState is "partial" then
+      set choice to my askStatus(statusMessage, {"Stop server", "Close"}, "Close")
+    else
+      set choice to my askStatus(statusMessage, {"Close", "Check again"}, "Check again")
+    end if
+    if choice is "Open app" then
+      my runAction(launcherCommand & " --open", "Nexus could not open the app.")
+      return
+    else if choice is "Start server" then
+      my notify("Starting Nexus EEG Lab. The app opens when it is ready.")
+      my runAction("/usr/bin/env NEXUS_CHECK_UPDATES=1 MINDMELD_DESKTOP_APP=" & quoted form of installedAppPath & " " & launcherCommand & " --start", "Nexus could not start.")
+      return
+    else if choice is "Stop server" then
+      my stopServer(launcherCommand)
+    else if choice is not "Check again" then
+      return
+    end if
+  end repeat
 end run
+
+on readStatus(launcherCommand)
+  try
+    set statusLines to paragraphs of (do shell script launcherCommand & " --app-status")
+    set AppleScript's text item delimiters to linefeed
+    set statusMessage to (items 4 thru -1 of statusLines) as text
+    set AppleScript's text item delimiters to ""
+    return {item 1 of statusLines, item 2 of statusLines, item 3 of statusLines, statusMessage}
+  on error errorText
+    set AppleScript's text item delimiters to ""
+    my showError("Nexus Server could not check the app status.", errorText)
+    return missing value
+  end try
+end readStatus
+
+on stopServer(launcherCommand)
+  -- Check again now: a board session or recording may have started while the window was open.
+  set appStatus to my readStatus(launcherCommand)
+  if appStatus is missing value then return
+  if item 1 of appStatus is not in {"running", "partial"} then return
+  if item 2 of appStatus is not in {"none", "idle"} then
+    if not (my confirmStop(item 3 of appStatus)) then return
+  end if
+  my runAction(launcherCommand & " --stop", "Nexus could not stop.")
+end stopServer
+
+on runAction(commandText, failureText)
+  try
+    set resultText to do shell script commandText
+  on error errorText
+    my showError(failureText, errorText)
+    return
+  end try
+  my notify(resultText)
+end runAction
+
+-- Native UI only. The launcher tests replace these four handlers in a child script.
+on askStatus(statusMessage, buttonNames, defaultName)
+  try
+    return button returned of (display dialog statusMessage with title "Nexus Server" buttons buttonNames default button defaultName cancel button "Close" with icon note)
+  on error number -128
+    return "Close"
+  end try
+end askStatus
+
+on confirmStop(sessionSummary)
+  try
+    display dialog sessionSummary & return & return & "Stopping the server ends any board session or recording that has not been saved." with title "Nexus Server" buttons {"Stop anyway", "Cancel"} default button "Cancel" cancel button "Cancel" with icon caution
+    return true
+  on error number -128
+    return false
+  end try
+end confirmStop
+
+on showError(failureText, errorText)
+  display dialog failureText & return & return & errorText with title "Nexus Server" buttons {"OK"} default button "OK" with icon stop
+end showError
+
+on notify(messageText)
+  display notification messageText with title "Nexus Server"
+end notify
 EOF
 
 /usr/bin/osacompile -o "$TEMP_APP" "$APPLESCRIPT_SOURCE"

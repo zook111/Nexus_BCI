@@ -83,8 +83,8 @@ Once installation is finished, you can normally open the app from the Desktop la
 
 You will not need to type Git commands for everyday updates.
 
-1. Finish and save your experiment and recording. Stop and Reset the board. Double-click **Nexus Server** to stop its services; closing the browser alone does not stop them.
-2. Open **Nexus Server** again. If an update is offered, choose **Update and restart**, or **Not now** to use your installed version.
+1. Finish and save your experiment and recording. Stop and Reset the board. Open **Nexus Server** and choose **Stop server**; closing the browser alone does not stop the services.
+2. Choose **Start server**. If an update is offered, choose **Update and restart**, or **Not now** to use your installed version.
 3. Keep the Mac awake and online while an update installs. This may take several minutes. The workspace opens when ready; recordings and local settings stay in place.
 
 Offline checks still let the installed app open. No offer can mean the check was unavailable. Local code edits block updates rather than being discarded. If installation fails, the updater tries to reopen the previous version. If it asks for help, keep the app stopped and ask your helper. Do not delete the project folder or recovery copies.
@@ -99,7 +99,7 @@ Try this with simulated signals before connecting the headset.
 
 ## 7. Open Nexus
 
-Double-click **Nexus Server** on the Desktop. It starts the local services and opens your browser. If the page does not open, visit [http://localhost:5173](http://localhost:5173). Keep the nexus folder in place; the launcher uses it.
+Double-click **Nexus Server** on the Desktop. Its window shows whether the app is running. Choose **Start server** to start the local services and open your browser, or **Open app** if it is already running. If the page does not open, visit [http://localhost:5173](http://localhost:5173). Keep the nexus folder in place; the launcher uses it.
 
 ## 8. Start simulated EEG
 
@@ -111,7 +111,7 @@ Enter a session label such as **synthetic-practice**. Click **Record** and wait 
 
 ## 10. Explore, then close the app
 
-Open **Experiment Lab > How the classifier works** and try the interactive maths lesson. When finished, click **Stop** in Console. Double-click the Desktop's **Nexus Server** again to stop the local services. The Desktop app toggles them on and off.
+Open **Experiment Lab > How the classifier works** and try the interactive maths lesson. When finished, click **Stop** and **Reset** in Console. Open the Desktop's **Nexus Server** and choose **Stop server**. Opening it only shows the status; it never stops the services by itself.
 
 ## When you are ready for the headset
 
@@ -127,7 +127,7 @@ Use participant codes and arrange permission with your teacher before collecting
 
 **The nexus folder already exists:** do not delete it. Run `cd ~/Documents/nexus`, then the final two commands in step 6. If it belongs to a different project, ask for help first.
 
-**The page will not load:** if services are stopped, open Nexus Server once and allow startup time. If they are already running, reload the browser. Opening the launcher again stops running services. Try the local link in step 7.
+**The page will not load:** open Nexus Server to see its status. If it is stopped, choose Start server and allow startup time. If it is running, choose Open app or reload the browser. Try the local link in step 7.
 
 **No headset serial port:** check the dongle and adapter, then Refresh the port list. Use Synthetic to check the software separately.
 

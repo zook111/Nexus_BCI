@@ -3270,6 +3270,14 @@ function App() {
           && (snapshot.status === 'prepared' || snapshot.status === 'streaming')) {
           setSelectedBoard(snapshot.board)
           setSelectedPort(snapshot.serial_port ?? '')
+          const activePort = snapshot.serial_port
+          if (activePort) {
+            setPorts(current => current.some(port => port.device === activePort) ? current : [
+              ...current,
+              { device: activePort, transport: 'unknown', recommended: false, rank: 0,
+                message: 'Active backend serial port' },
+            ])
+          }
         }
         if (snapshot.status === 'error') {
           setBoard(current => current.status === 'streaming' || current.status === 'prepared'

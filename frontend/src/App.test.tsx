@@ -291,3 +291,18 @@ it('leaves saved replay for a shared stream start but permits replay during an e
   await broadcast('streaming')
   expect(screen.getByText('Replay window loaded')).toBeInTheDocument()
 })
+
+it('shows an active serial port discovered by another window after this tab loaded', async () => {
+  vi.stubEnv('VITE_OPENBCI_AUTOCONNECT_SERIAL', '')
+  apiMock.ports.mockResolvedValue([])
+  render(<App />)
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Connect' })).toBeEnabled())
+  await act(async () => {
+    sockets.at(-1)?.onmessage?.(new MessageEvent('message', {
+      data: JSON.stringify({ ...preparedBoard, sample_count: 0, timestamps: [], channels: [] }),
+    }))
+  })
+  expect(screen.getByRole('combobox', { name: 'Serial port' })).toHaveValue(trustedPort.device)
+  expect(screen.getByText('Active backend serial port')).toBeInTheDocument()
+  expect(apiMock.connect).not.toHaveBeenCalled()
+})

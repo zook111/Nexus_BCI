@@ -8,6 +8,8 @@ Keep this page bookmarked. You can also open these four PDFs from **Help** insid
 
 Follow the [Intel/Ventura setup PDF](intel-ventura-setup.pdf), or use the [copyable setup instructions](intel-ventura-setup.md). One person types while the other checks the instructions. Use the standard Python 3.13 installer and Node 24 specified there; you do not need Homebrew, an API key or a GPU.
 
+**New to coding?** Terminal is the Mac app where you enter the setup commands. Open it with **Command + Space**, type **Terminal**, then press **Return**. The setup guide's [Terminal introduction](intel-ventura-setup.md#4-meet-terminal-and-check-git) explains where to paste commands, what the prompt means and when to wait. You do not need to know how to code.
+
 Finish the practice steps before moving on:
 
 - Double-click Nexus Server. The browser opens the app at [http://localhost:5173](http://localhost:5173).
@@ -27,9 +29,10 @@ Decide the task instructions, rest periods, participant codes, exclusion rules a
 
 Use the [hardware session checklist PDF](hardware-session-packet.pdf), or its [copyable text version](hardware-session-packet.md). It covers the dongle, two ear clips, electrode contacts, fresh samples, signal quality and saving/reopening data. The last PDF page is a printable blank record sheet.
 
-For a typed record, copy the [blank session sheet](hardware-session-record-sheet.md) into the ignored data folder. In Terminal, from the nexus folder:
+For a typed record, copy the [blank session sheet](hardware-session-record-sheet.md) into the ignored data folder. Open Terminal as described above. Enter the first line to open the project folder, then enter the other lines one at a time:
 
 ```bash
+cd ~/Documents/nexus
 mkdir -p data/session-notes
 cp docs/hardware-session-record-sheet.md data/session-notes/P01-session-01.md
 ```
@@ -63,9 +66,10 @@ Try the matching step below. The installed app's **Help** tab also contains trou
 | No spoken cue | Follow the visible instruction. Check volume and browser sound permissions. Speech support varies; setup works without a paid speech key. |
 | Feedback audio is silent | It starts muted. Unmute only when ready; live feedback needs fresh, usable signal and enough confidence. Calm mode also needs a completed baseline. |
 
-If you still need help, save your work and note the exact message, board type and whether Synthetic works. In Terminal, from the nexus folder, run these commands one at a time:
+If you still need help, save your work and note the exact message, board type and whether Synthetic works. Open Terminal. Enter the first line to open the project folder, then run the diagnostic commands one at a time:
 
 ```bash
+cd ~/Documents/nexus
 ./script/build_and_run.sh --status
 ./script/build_and_run.sh --verify
 ./script/build_and_run.sh --logs

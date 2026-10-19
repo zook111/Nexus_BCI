@@ -1,8 +1,8 @@
-# Set up Nexus on your MacBook
+# Set up Dr K's EEG Lab on your MacBook
 
 For a 2017 Intel MacBook running macOS Ventura. Work through this together: one person types, the other checks each step.
 
-**Your goal:** open Nexus, practise with simulated EEG, then save and reopen a short recording. You do not need a headset or an API key for these steps.
+**Your goal:** open the app, practise with simulated EEG, then save and reopen a short recording. The desktop launcher is called **Nexus Server**. You do not need a headset or an API key for these steps.
 
 ## 1. Check the Mac
 
@@ -16,19 +16,37 @@ Open the [Python 3.13 download page](https://www.python.org/downloads/release/py
 
 Download the [official Node 24 macOS installer](https://nodejs.org/dist/v24.21.0/node-v24.21.0.pkg), open the package and follow its installer. This package supports Intel Macs and includes npm. You do not need Homebrew.
 
-## 4. Open Terminal and check Git
+## 4. Meet Terminal and check Git
 
-Press Command + Space, type Terminal and press Return. Type this command and press Return:
+**Terminal** is an app already on the Mac. It lets you give the computer typed instructions, called **commands**. You do not need any coding experience to follow the commands in this guide.
+
+1. Hold **Command** and press **Space** to open Spotlight search. Let go of the keys.
+2. Type **Terminal**, then press **Return** to open it. You can also find it in **Finder > Applications > Utilities > Terminal**.
+3. A window opens with some text and a cursor. The last line is the **prompt**, usually ending in `%` or `$`. It means Terminal is ready for a command. Your name or Mac's name may appear there; that is normal.
+
+**How to enter each command:** click inside Terminal. Copy one complete command line from a code box in this guide with **Command + C**, paste it with **Command + V**, then press **Return** once. Paste into Terminal, rather than the browser's address bar. Do not copy the prompt, headings or code-box border marks.
+
+Some commands print text; others finish silently. **Wait until the prompt returns before entering the next line.** Installation can take several minutes. Leave Terminal open while it is working. If an error appears, stop and show your helper the exact message instead of continuing with the next step.
+
+Try your first command now:
 
 ```bash
 git --version
 ```
 
-If the Mac offers to install Apple's Command Line Tools, finish that installation. If Git is missing without a prompt, run `xcode-select --install` and follow the installer. Then open a new Terminal window.
+You should see a line beginning `git version`, followed by another prompt. Git is the tool that downloads this project's files in step 6.
+
+If the Mac offers to install Apple's Command Line Tools, finish that installation. If Git is missing without a prompt, enter `xcode-select --install` and follow the installer. After installation, choose **Shell > New Window** from Terminal's top menu, then try `git --version` again.
+
+<!-- pagebreak -->
+
+# Download the app
+
+Keep following the steps in order. Python and Node run the app's software; you do not need to learn their programming languages to install it.
 
 ## 5. Check your installed versions
 
-Run each line separately. Expect Python 3.13.x, Node v24.x and an npm version number.
+If you installed Python or Node while Terminal was open, choose **Shell > New Window** before checking. Enter each line below separately. Expect Python 3.13.x, Node v24.x and an npm version number. npm installs the browser interface's dependencies.
 
 ```bash
 python3.13 --version
@@ -38,7 +56,7 @@ npm --version
 
 ## 6. Download and install Nexus
 
-Copy each line below into Terminal, pressing Return after each. Wait for the setup command to finish before running the last line. It can take several minutes.
+Copy each line below into Terminal, pressing Return after each. Wait for the prompt to return each time. If a line reports an error, stop there and ask your helper.
 
 ```bash
 mkdir -p ~/Documents
@@ -49,7 +67,17 @@ NEXUS_PYTHON=python3.13 ./script/setup.sh
 ./script/install_desktop_launcher.sh
 ```
 
-Setup creates a local Python environment and installs the app's dependencies. The last command adds **Nexus Server** to your Desktop. Keep the nexus folder in Documents.
+The commands create a folder in Documents, download the project and open its folder. `cd` means "change folder". `~/Documents` means the Documents folder for your Mac account. `cd nexus` puts Terminal inside the downloaded project, where the setup scripts live.
+
+The `NEXUS_PYTHON=...` command installs the app's dependencies. It can print many lines and take several minutes. Do not enter the final launcher command until setup has finished successfully and the prompt returns. The final command adds **Nexus Server** to your Desktop. Keep the nexus folder in Documents.
+
+**Opening Terminal another day?** A new window normally starts in your home folder. Before running a command described as "from the nexus folder", enter this line and wait for the prompt:
+
+```bash
+cd ~/Documents/nexus
+```
+
+Once installation is finished, you can normally open the app from the Desktop launcher without typing commands.
 
 <!-- pagebreak -->
 
@@ -87,7 +115,7 @@ Use participant codes and arrange permission with your teacher before collecting
 
 **The nexus folder already exists:** do not delete it. Run `cd ~/Documents/nexus`, then the final two commands in step 6. If it belongs to a different project, ask for help first.
 
-**The page will not load:** open Nexus Server once, allow a short startup wait and try the local link in step 7. Check that another Nexus instance is not already using ports 8000 or 5173.
+**The page will not load:** if services are stopped, open Nexus Server once and allow startup time. If they are already running, reload the browser. Opening the launcher again stops running services. Try the local link in step 7.
 
 **No headset serial port:** check the dongle and adapter, then Refresh the port list. Use Synthetic to check the software separately.
 

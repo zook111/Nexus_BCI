@@ -2,6 +2,12 @@
 
 Public repository: [zook111/Nexus_BCI](https://github.com/zook111/Nexus_BCI).
 
+## First-time Terminal instructions, 19 October 2026
+
+- Expanded the Intel/Ventura setup text and PDF for students with no coding experience: what Terminal and commands are, Spotlight and Finder launch routes, copy/paste and Return, the prompt, waiting for completion, handling errors and returning to the project folder another day.
+- The setup PDF is now three pages with larger command text. README and Help describe the beginner route; the starting page links directly to the Terminal introduction and includes the project-folder command before later diagnostic/session-sheet commands.
+- Verification: all three PDF pages rendered and visually checked; all command lines survive text extraction, six clickable links remain, and the production PDF asset matches its source. README/start-page local links resolve. Node 24 frontend lint, all 23 App tests and production build pass. Backend runtime code is unchanged; required CI still applies. No fresh Intel/Ventura installation or physical EEG test was performed.
+
 ## Student guide navigation, 19 October 2026
 
 - Added `docs/student-start-here.md`: one route through Intel/Ventura installation, synthetic practice, first-week research, physical checks and the first experiment, with expected results and common recovery steps. All four student PDFs and both copyable setup/hardware guides are tracked in the public repository.

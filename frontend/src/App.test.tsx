@@ -17,6 +17,8 @@ const apiMock = vi.hoisted(() => ({
   dspSummary: vi.fn(),
   signalQuality: vi.fn(),
   calmFeatures: vi.fn(),
+  recordingPreview: vi.fn(),
+  recordingAnalysis: vi.fn(),
 }))
 
 vi.mock('./api', async (importOriginal) => {
@@ -260,4 +262,32 @@ it('keeps a manually selected board while receiving idle frames', async () => {
     }))
   })
   expect(screen.getByRole('combobox', { name: 'Board' })).toHaveValue('cyton_daisy')
+})
+
+it('leaves saved replay for a shared stream start but permits replay during an existing stream', async () => {
+  vi.stubEnv('VITE_OPENBCI_AUTOCONNECT_SERIAL', '')
+  apiMock.board.mockResolvedValue(preparedBoard)
+  const saved = { ...emptyRecording, session_id: 'saved-replay', label: 'Saved practice', sampling_rate: 250, sample_count: 2 }
+  apiMock.recordings.mockResolvedValue([saved])
+  apiMock.recordingPreview.mockResolvedValue({ recording: saved, offset: 0, total_rows: 2, row_count: 2, headers: ['timestamp', 'Fp1'], rows: [[1, 2], [2, 3]], timestamps: [1, 2], channels: [{ index: 1, label: 'Fp1', samples: [2, 3] }] })
+  apiMock.recordingAnalysis.mockResolvedValue({ recording: saved, offset: 0, total_rows: 2, sample_count: 2, sampling_rate: 250, bandpass_low_hz: 1, bandpass_high_hz: 45, channels: [] })
+  render(<App />)
+  await screen.findByRole('button', { name: 'Preview' })
+  async function broadcast(status: 'prepared' | 'streaming') {
+    await act(async () => {
+      sockets.at(-1)?.onmessage?.(new MessageEvent('message', {
+        data: JSON.stringify({ ...preparedBoard, status, sample_count: 0, timestamps: [], channels: [] }),
+      }))
+    })
+  }
+  await broadcast('prepared')
+  fireEvent.click(screen.getByRole('button', { name: 'Preview' }))
+  await screen.findByText('Replay window loaded')
+  await broadcast('streaming')
+  expect(screen.queryByText('Replay window loaded')).not.toBeInTheDocument()
+  expect(apiMock.signalQuality).toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('button', { name: 'Preview' }))
+  await screen.findByText('Replay window loaded')
+  await broadcast('streaming')
+  expect(screen.getByText('Replay window loaded')).toBeInTheDocument()
 })

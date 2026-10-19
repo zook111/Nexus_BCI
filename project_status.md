@@ -36,6 +36,7 @@ Clean Python 3.12 / Node 24 setup, backend Ruff and 161 tests, frontend lint and
 - Python 3.12 backend Ruff and 164 tests pass; Node 24 frontend lint, 88 tests and production build pass. Regression tests cover remote device transitions, optional legacy frames, malformed metadata and native loss before/after streaming.
 - Two Chrome tabs at an isolated loopback test URL followed simulated Connect → Start → Stop → Reset without refreshing the observer. Device controls, DSP and quality updated together. No app console warnings/errors were observed; one unrelated Chrome extension emitted a search-engine error. Screenshots and test data remain outside the tracked source.
 - No additional physical-headset test was performed. Stable electrode contact and a real eyes-open/closed recording still need a later hardware session. The hardware demo launcher was stopped for the night; the review does not certify EEG quality or classifier accuracy.
+- PR #8 follow-up review: a shared transition into streaming now clears saved replay and its analysis, matching the local Start action. Repeated streaming frames preserve an intentionally opened replay. The regression test covers both paths.
 
 ## Known limits and next steps
 

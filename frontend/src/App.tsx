@@ -3255,8 +3255,15 @@ function App() {
   }, [])
 
   useEffect(() => {
+    let previousStatus: StreamSnapshot['status'] | null = null
     const connection = connectLiveStream(STREAM_WS_URL, {
       snapshot(snapshot) {
+        const started = snapshot.status === 'streaming' && previousStatus !== 'streaming'
+        previousStatus = snapshot.status
+        if (started) {
+          setReplay(null)
+          setReplayAnalysis(null)
+        }
         setStream(snapshot)
         setBoard(current => sharedBoardState(current, snapshot))
         if (snapshot.eeg_channels && snapshot.eeg_names && snapshot.board

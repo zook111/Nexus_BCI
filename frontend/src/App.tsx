@@ -1798,35 +1798,50 @@ function stopCalmAudio(nodes: CalmAudioNodes) {
     // Oscillators can only be stopped once.
   }
   window.setTimeout(() => {
-    void nodes.context.close()
+    void nodes.context.close().catch(() => undefined)
   }, 140)
 }
 
-function CalmAudioPadControls({
+export function CalmAudioPadControls({
   feedback,
   voice,
   onVoiceChange,
+  sourceTimestamp,
+  replay = false,
 }: {
   feedback: FeedbackState
   voice: FeedbackAudioVoice
   onVoiceChange: (voice: FeedbackAudioVoice) => void
+  sourceTimestamp?: number | null
+  replay?: boolean
 }) {
   const [enabled, setEnabled] = useState(false)
   const [volume, setVolume] = useState(0.35)
   const [audioError, setAudioError] = useState<string | null>(null)
   const nodesRef = useRef<CalmAudioNodes | null>(null)
+  const audioGenerationRef = useRef(0)
+  const [nowMs, setNowMs] = useState(() => Date.now())
   const previousVoiceRef = useRef<FeedbackAudioVoice>(voice)
   const selectedLoop = isLyriaAudioVoice(voice) ? lyriaAudioLoops[voice] : null
   const confidence = clampUnit(feedback.confidence)
-  const hasScore = typeof feedback.score === 'number'
+  const hasScore = typeof feedback.score === 'number' && Number.isFinite(feedback.score)
+  const sourceAgeMs = typeof sourceTimestamp === 'number' ? nowMs - sourceTimestamp * 1000 : NaN
+  const sourceFresh = replay || (Number.isFinite(sourceAgeMs) && sourceAgeMs >= -1000 && sourceAgeMs <= 2000)
   const gateOpen =
+    sourceFresh &&
     feedback.signalState === 'usable' &&
     hasScore &&
     confidence >= calmAudioConfidenceThreshold
-  const audioStatus = enabled ? (gateOpen ? 'Open' : 'Confidence gate') : 'Muted'
+  const audioStatus = enabled ? (!sourceFresh ? 'Signal paused' : gateOpen ? 'Open' : 'Confidence gate') : 'Muted'
   const sourceLabel = selectedLoop ? 'Lyria loop' : 'Web Audio'
 
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), 250)
+    return () => window.clearInterval(timer)
+  }, [])
+
   const stopAudio = useCallback(() => {
+    audioGenerationRef.current += 1
     if (nodesRef.current) {
       stopCalmAudio(nodesRef.current)
       nodesRef.current = null
@@ -1836,6 +1851,7 @@ function CalmAudioPadControls({
 
   const changeVoice = useCallback(
     (nextVoice: FeedbackAudioVoice) => {
+      audioGenerationRef.current += 1
       if (nodesRef.current) {
         stopCalmAudio(nodesRef.current)
         nodesRef.current = null
@@ -1848,97 +1864,68 @@ function CalmAudioPadControls({
   )
 
   const startAudio = useCallback(async () => {
+    const request = ++audioGenerationRef.current
     setAudioError(null)
-
-    if (selectedLoop) {
-      if (nodesRef.current?.kind !== 'lyria-loop' || nodesRef.current.src !== selectedLoop.src) {
-        if (nodesRef.current) {
-          stopCalmAudio(nodesRef.current)
-        }
-        const audio = new Audio(selectedLoop.src)
-        audio.loop = true
-        audio.preload = 'auto'
-        audio.volume = 0
-        nodesRef.current = {
-          kind: 'lyria-loop',
-          audio,
-          src: selectedLoop.src,
-        }
-      }
-
-      try {
-        const loopNodes = nodesRef.current
-        if (!loopNodes || loopNodes.kind !== 'lyria-loop') {
-          throw new Error('Audio loop did not initialize')
-        }
-        await loopNodes.audio.play()
-        setEnabled(true)
-      } catch {
-        if (nodesRef.current) {
-          stopCalmAudio(nodesRef.current)
-          nodesRef.current = null
-        }
-        setAudioError('Audio loop could not start in this browser.')
-      }
-      return
-    }
-
-    const AudioContextConstructor = getAudioContextConstructor()
-    if (!AudioContextConstructor) {
-      setAudioError('Web Audio is unavailable in this browser.')
-      return
-    }
-
-    if (!nodesRef.current || nodesRef.current.kind !== 'oscillator') {
-      if (nodesRef.current) {
-        stopCalmAudio(nodesRef.current)
-      }
-      const context = new AudioContextConstructor()
-      const masterGain = context.createGain()
-      const filter = context.createBiquadFilter()
-      const oscillatorA = context.createOscillator()
-      const oscillatorB = context.createOscillator()
-      const oscillatorGainA = context.createGain()
-      const oscillatorGainB = context.createGain()
-
-      masterGain.gain.value = 0
-      filter.type = 'lowpass'
-      oscillatorGainA.gain.value = 0.55
-      oscillatorGainB.gain.value = 0.35
-      oscillatorA.connect(oscillatorGainA).connect(filter)
-      oscillatorB.connect(oscillatorGainB).connect(filter)
-      filter.connect(masterGain).connect(context.destination)
-      oscillatorA.start()
-      oscillatorB.start()
-
-      nodesRef.current = {
-        kind: 'oscillator',
-        context,
-        masterGain,
-        oscillatorA,
-        oscillatorB,
-        oscillatorGainA,
-        oscillatorGainB,
-        filter,
-      }
-    }
-
+    setEnabled(true) // Mute remains available while browser playback permission settles.
+    let ownedNodes: CalmAudioNodes | null = null
+    let createdContext: AudioContext | null = null
+    let failureMessage = 'Audio could not start in this browser.'
     try {
-      if (nodesRef.current.kind === 'oscillator') {
-        await nodesRef.current.context.resume()
-      }
-      setEnabled(true)
-    } catch {
       if (nodesRef.current) {
         stopCalmAudio(nodesRef.current)
         nodesRef.current = null
       }
-      setAudioError('Audio could not start in this browser.')
+      if (selectedLoop) {
+        failureMessage = 'Audio loop could not start in this browser.'
+        const audio = new Audio(selectedLoop.src)
+        audio.loop = true
+        audio.preload = 'auto'
+        audio.volume = 0
+        ownedNodes = { kind: 'lyria-loop', audio, src: selectedLoop.src }
+        nodesRef.current = ownedNodes
+        await audio.play()
+      } else {
+        const AudioContextConstructor = getAudioContextConstructor()
+        if (!AudioContextConstructor) {
+          failureMessage = 'Web Audio is unavailable in this browser.'
+          throw new Error(failureMessage)
+        }
+        const context = new AudioContextConstructor()
+        createdContext = context
+        const masterGain = context.createGain()
+        const filter = context.createBiquadFilter()
+        const oscillatorA = context.createOscillator()
+        const oscillatorB = context.createOscillator()
+        const oscillatorGainA = context.createGain()
+        const oscillatorGainB = context.createGain()
+        masterGain.gain.value = 0
+        filter.type = 'lowpass'
+        oscillatorGainA.gain.value = 0.55
+        oscillatorGainB.gain.value = 0.35
+        oscillatorA.connect(oscillatorGainA).connect(filter)
+        oscillatorB.connect(oscillatorGainB).connect(filter)
+        filter.connect(masterGain).connect(context.destination)
+        oscillatorA.start()
+        oscillatorB.start()
+        ownedNodes = { kind: 'oscillator', context, masterGain, oscillatorA, oscillatorB,
+          oscillatorGainA, oscillatorGainB, filter }
+        nodesRef.current = ownedNodes
+        await context.resume()
+      }
+    } catch {
+      // A cancelled/older play request must never dispose a newer sound engine.
+      if (request !== audioGenerationRef.current) return
+      if (ownedNodes) stopCalmAudio(ownedNodes)
+      else if (createdContext) void createdContext.close().catch(() => undefined)
+      nodesRef.current = null
+      setEnabled(false)
+      setAudioError(failureMessage)
     }
   }, [selectedLoop])
 
   useEffect(() => {
     return () => {
+      audioGenerationRef.current += 1
       if (nodesRef.current) {
         stopCalmAudio(nodesRef.current)
         nodesRef.current = null
@@ -1950,6 +1937,7 @@ function CalmAudioPadControls({
     if (previousVoiceRef.current === voice) return
 
     previousVoiceRef.current = voice
+    audioGenerationRef.current += 1
     if (nodesRef.current) {
       stopCalmAudio(nodesRef.current)
       nodesRef.current = null
@@ -1967,11 +1955,6 @@ function CalmAudioPadControls({
 
     if (nodes.kind === 'lyria-loop') {
       nodes.audio.volume = clampUnit(enabled && gateOpen ? volume * confidence * 0.7 : 0)
-      if (enabled && nodes.audio.paused) {
-        void nodes.audio.play().catch(() => {
-          setAudioError('Audio loop could not resume in this browser.')
-        })
-      }
       return
     }
 
@@ -1981,7 +1964,7 @@ function CalmAudioPadControls({
     const now = nodes.context.currentTime
     const rootHz = preset.baseHz + score * 32
 
-    nodes.masterGain.gain.setTargetAtTime(targetGain, now, 0.6)
+    nodes.masterGain.gain.setTargetAtTime(targetGain, now, gateOpen ? 0.6 : 0.04)
     nodes.oscillatorA.type = voice === 'ember' ? 'triangle' : 'sine'
     nodes.oscillatorB.type = voice === 'air' ? 'sine' : 'triangle'
     nodes.oscillatorA.frequency.setTargetAtTime(rootHz, now, 0.8)
@@ -1996,7 +1979,7 @@ function CalmAudioPadControls({
         <div>
           <strong>Ambient pad</strong>
           <span>
-            {feedbackModes[feedback.mode].shortLabel} · {audioStatus} · {sourceLabel}
+            {feedbackModes[feedback.mode].shortLabel} · {audioStatus} · {sourceLabel}{replay ? ' · Saved replay' : ''}
           </span>
         </div>
       </div>
@@ -2446,6 +2429,7 @@ function ReplayMarkerStrip({
 
 function CalmMirrorSurface({
   board,
+  streamTimestamp,
   displayedChannels,
   visibleQualityChannels,
   qualityByLabel,
@@ -2475,6 +2459,7 @@ function CalmMirrorSurface({
   baselineBusy,
 }: {
   board: BoardState
+  streamTimestamp: number | null
   displayedChannels: ChannelSnapshot[]
   visibleQualityChannels: SignalQualityChannel[]
   qualityByLabel: Map<string, SignalQualityChannel>
@@ -2808,6 +2793,10 @@ function CalmMirrorSurface({
 
           <CalmAudioPadControls
             feedback={activeFeedback}
+            sourceTimestamp={feedbackMode === 'calm'
+              ? Math.min(streamTimestamp ?? NaN, calm?.source_timestamp ?? NaN)
+              : streamTimestamp}
+            replay={replayMode}
             voice={audioVoice}
             onVoiceChange={onAudioVoiceChange}
           />
@@ -4384,6 +4373,7 @@ function App() {
         ) : activeView === 'demo' ? (
           <CalmMirrorSurface
             board={board}
+            streamTimestamp={stream.timestamps.at(-1) ?? null}
             displayedChannels={displayedChannels}
             visibleQualityChannels={visibleQualityChannels}
             qualityByLabel={qualityByLabel}

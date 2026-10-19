@@ -2952,6 +2952,13 @@ function App() {
   const [calibrationMarkers, setCalibrationMarkers] = useState<CalibrationMarker[]>([])
   const [error, setError] = useState<string | null>(null)
   const liveConnectionRef = useRef<ReturnType<typeof connectLiveStream> | null>(null)
+  const loadedBoardRef = useRef<BoardState | null>(null)
+  const calibrationRunningRef = useRef(false)
+  const calibrationSourceRef = useRef<{
+    board: BoardState
+    recording: Pick<RecordingState, 'session_id' | 'label' | 'sample_count'> | null
+    interrupted: boolean
+  } | null>(null)
   const liveErrorRef = useRef<string | null>(null)
   const dspRef = useRef<DspSummary | null>(null)
   const signalQualityRef = useRef<SignalQuality | null>(null)
@@ -3000,6 +3007,7 @@ function App() {
         await loadBoardContext()
       setHealth(healthResponse)
       setPorts(portResponse)
+      loadedBoardRef.current = boardResponse
       setBoard(boardResponse)
       setRecording(recordingResponse)
       setRecordings(recordingsResponse)
@@ -3142,6 +3150,7 @@ function App() {
   )
 
   const stopCalibrationProtocol = useCallback(() => {
+    calibrationRunningRef.current = false
     setCalibrationStatus((current) => (current === 'running' ? 'complete' : current))
     setCalibrationStepStartedAt(null)
     setCalibrationElapsedSeconds(0)
@@ -3149,6 +3158,9 @@ function App() {
   }, [playCalibrationCue])
 
   const startCalibrationProtocol = useCallback(() => {
+    calibrationRunningRef.current = true
+    calibrationSourceRef.current = { board, interrupted: false, recording: recording.active
+      ? { session_id: recording.session_id, label: recording.label, sample_count: recording.sample_count } : null }
     const firstStep = calibrationProtocol[0]
     const startedAt = Date.now()
     calibrationStepIndexRef.current = 0
@@ -3160,11 +3172,13 @@ function App() {
     setCalibrationMarkers([marker])
     persistCalibrationMarker(marker)
     playCalibrationCue(firstStep.cue)
-  }, [makeCalibrationMarker, persistCalibrationMarker, playCalibrationCue])
+  }, [board, recording, makeCalibrationMarker, persistCalibrationMarker, playCalibrationCue])
 
   const advanceCalibrationStep = useCallback(() => {
+    if (!calibrationRunningRef.current) return
     const nextIndex = calibrationStepIndexRef.current + 1
     if (nextIndex >= calibrationProtocol.length) {
+      calibrationRunningRef.current = false
       setCalibrationStatus('complete')
       setCalibrationStepStartedAt(null)
       setCalibrationElapsedSeconds(0)
@@ -3183,10 +3197,16 @@ function App() {
   }, [captureCalibrationMarker, playCalibrationCue])
 
   const exportCalibrationMarkers = useCallback(() => {
+    const source = calibrationSourceRef.current
     const payload = {
       exported_at: new Date().toISOString(),
-      board,
-      recording: recording.active
+      board: source?.board ?? board,
+      interrupted: source?.interrupted ?? false,
+      recording: source ? source.recording && {
+        ...source.recording,
+        sample_count_at_start: source.recording.sample_count,
+        sample_count: recording.session_id === source.recording.session_id ? recording.sample_count : null,
+      } : recording.active
         ? {
             session_id: recording.session_id,
             label: recording.label,
@@ -3226,6 +3246,7 @@ function App() {
         if (cancelled) return
         setHealth(healthResponse)
         setPorts(portResponse)
+        loadedBoardRef.current = boardResponse
         setBoard(boardResponse)
         setRecording(recordingResponse)
         setRecordings(recordingsResponse)
@@ -3235,7 +3256,10 @@ function App() {
         if (setup.connection) {
           try {
             const connectedBoard = await api.connect(setup.connection)
-            if (!cancelled) setBoard(connectedBoard)
+            if (!cancelled) {
+              loadedBoardRef.current = connectedBoard
+              setBoard(connectedBoard)
+            }
           } catch (connectError) {
             if (!cancelled) {
               const failureMessage = formatBoardActionError(connectError)
@@ -3278,14 +3302,29 @@ function App() {
     let previousConnection: string | null | undefined
     const connection = connectLiveStream(STREAM_WS_URL, {
       snapshot(snapshot) {
-        const firstSnapshot = previousStatus === null
-        const started = snapshot.status === 'streaming' && previousStatus !== 'streaming'
-        const reset = snapshot.status === 'idle' && previousStatus !== 'idle'
+        if (previousStatus === null && loadedBoardRef.current) {
+          previousStatus = loadedBoardRef.current.status
+          previousConnection = loadedBoardRef.current.connection_id
+        }
+        const started = previousStatus !== null && snapshot.status === 'streaming' && previousStatus !== 'streaming'
+        const reset = previousStatus !== null && snapshot.status === 'idle' && previousStatus !== 'idle'
         const replaced = snapshot.connection_id !== undefined && previousConnection !== undefined
           && snapshot.connection_id !== previousConnection
         previousStatus = snapshot.status
         if (snapshot.connection_id !== undefined) previousConnection = snapshot.connection_id
-        if (firstSnapshot || reset || replaced) resetLiveFeedback()
+        if (reset || replaced) {
+          resetLiveFeedback()
+          if (calibrationRunningRef.current) {
+            calibrationRunningRef.current = false
+            if (calibrationSourceRef.current) calibrationSourceRef.current.interrupted = true
+            setCalibrationStatus('idle')
+            setCalibrationStepStartedAt(null)
+            setCalibrationElapsedSeconds(0)
+            setCalibrationStepIndex(0)
+            calibrationStepIndexRef.current = 0
+            window.speechSynthesis?.cancel()
+          }
+        }
         if (started || (replaced && snapshot.status === 'streaming')) {
           exitReplay()
         }
@@ -3373,6 +3412,7 @@ function App() {
 
     const interval = window.setInterval(() => {
       if (board.status !== 'streaming') {
+        calibrationRunningRef.current = false
         setCalibrationStatus('idle')
         setCalibrationStepStartedAt(null)
         setCalibrationElapsedSeconds(0)
@@ -3650,6 +3690,7 @@ function App() {
     setError(null)
     try {
       const next = await action()
+      loadedBoardRef.current = next
       setBoard(next)
       if (next.status === 'idle') {
         resetLiveFeedback()

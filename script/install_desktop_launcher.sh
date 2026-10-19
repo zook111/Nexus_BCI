@@ -31,11 +31,16 @@ fi
 
 mkdir -p "$(dirname "$APP_PATH")" "$ICONSET"
 
+# Escape the AppleScript string as well as quoting the shell argument at runtime.
+APPLE_LAUNCHER_PATH="${LAUNCHER_SCRIPT//\\/\\\\}"
+APPLE_LAUNCHER_PATH="${APPLE_LAUNCHER_PATH//\"/\\\"}"
+
 cat > "$APPLESCRIPT_SOURCE" <<EOF
 on run
-  set launcherPath to "$LAUNCHER_SCRIPT"
+  set launcherPath to "$APPLE_LAUNCHER_PATH"
+  set installedAppPath to POSIX path of (path to me)
   try
-    set resultText to do shell script "/bin/bash " & quoted form of launcherPath & " --toggle"
+    set resultText to do shell script "/usr/bin/env NEXUS_CHECK_UPDATES=1 MINDMELD_DESKTOP_APP=" & quoted form of installedAppPath & " /bin/bash " & quoted form of launcherPath & " --toggle"
     display notification resultText with title "Nexus Server"
   on error errorText number errorNumber
     display dialog "Nexus could not start or stop." & return & return & errorText with title "Nexus Server" buttons {"OK"} default button "OK" with icon stop

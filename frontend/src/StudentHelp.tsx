@@ -47,6 +47,12 @@ export function StudentHelp() {
         </a>
       </article>)}
     </div>
+    <div className="panel student-help__notes">
+      <h3>Updates without Terminal</h3>
+      <p>Finish and save your experiment and recording, then Stop and Reset the board. Double-click Nexus Server to stop its services, then open it again. Closing the browser alone does not stop them.</p>
+      <p>When an update is offered, choose <strong>Update and restart</strong> or <strong>Not now</strong>. Installation needs internet and may take several minutes; the workspace opens when ready. Recordings and local settings stay in place. Offline checks still let your installed version open; no offer does not prove it is up to date.</p>
+      <p>If recovery asks for help, keep the app stopped and ask your helper. Local code edits are preserved and block updates. Older installs need one helper-led source update and launcher reinstall first; fresh setup includes this.</p>
+    </div>
     <div className="panel student-help__troubleshooting">
       <h3>If you get stuck</h3>
       <details><summary>The page will not open or says API disconnected</summary>

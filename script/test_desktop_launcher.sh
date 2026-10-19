@@ -61,4 +61,36 @@ wait "$LOCK_HOLDER_PID" 2>/dev/null || true
 LOCK_HOLDER_PID=""
 MINDMELD_LAUNCHER_STATE_DIR="$STATE_DIR" "$LAUNCHER" --stop >/dev/null
 
-echo "Desktop launcher PID and kernel-lock safety tests passed."
+# A copied fixture exercises the updater/startup contract without launching services.
+FIXTURE="$TEST_ROOT/student project"
+mkdir -p "$FIXTURE/script"
+cp "$LAUNCHER" "$FIXTURE/script/build_and_run.sh"
+cat > "$FIXTURE/script/student_updates.py" <<'PYFAKE'
+import os
+from pathlib import Path
+Path(os.environ['UPDATE_TEST_MARK']).write_text('called')
+raise SystemExit(int(os.environ['UPDATE_TEST_RESULT']))
+PYFAKE
+TEST_PYTHON="${NEXUS_PYTHON:-$SCRIPT_DIR/../.venv/bin/python}"
+if [ ! -x "$TEST_PYTHON" ]; then TEST_PYTHON="$(command -v python3)"; fi
+for update_result in 20 1 0; do
+  rm -f "$TEST_ROOT/worker-called"
+  result=0
+  UPDATE_TEST_MARK="$TEST_ROOT/worker-called" UPDATE_TEST_RESULT="$update_result" \
+    NEXUS_PYTHON="$TEST_PYTHON" MINDMELD_OPEN_BROWSER=0 \
+    MINDMELD_LAUNCHER_STATE_DIR="$TEST_ROOT/fixture-state" \
+    "$FIXTURE/script/build_and_run.sh" --start > "$TEST_ROOT/fixture-output" 2>&1 || result=$?
+  [ -e "$TEST_ROOT/worker-called" ]
+  if [ "$update_result" = 20 ]; then
+    [ "$result" = 0 ]
+    ! grep -q "environment is missing" "$TEST_ROOT/fixture-output"
+  elif [ "$update_result" = 1 ]; then
+    [ "$result" != 0 ]
+    ! grep -q "environment is missing" "$TEST_ROOT/fixture-output"
+  else
+    [ "$result" != 0 ]
+    grep -q "environment is missing" "$TEST_ROOT/fixture-output"
+  fi
+done
+
+echo "Desktop launcher PID, kernel-lock and updater startup tests passed."

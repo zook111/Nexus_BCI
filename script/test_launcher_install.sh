@@ -47,4 +47,17 @@ MINDMELD_DESKTOP_APP="$TEST_ROOT/Custom Nexus.app" "$SCRIPT_DIR/install_desktop_
 [ -d "$LEGACY_APP" ]
 [ -d "$TEST_ROOT/Custom Nexus.app" ]
 
-echo "Nexus launcher migration, reinstall and custom-destination tests passed."
+# The native launcher opts into offered startup updates without putting the path in shell code.
+SOURCE_TEXT="$(/usr/bin/osadecompile "$NEXUS_APP/Contents/Resources/Scripts/main.scpt")"
+[[ "$SOURCE_TEXT" == *"NEXUS_CHECK_UPDATES=1"* ]]
+[[ "$SOURCE_TEXT" == *"MINDMELD_DESKTOP_APP="* ]]
+
+# Student folders can contain quotes as well as spaces.
+QUOTED_ROOT="$TEST_ROOT/project's \"quoted\" folder"
+mkdir -p "$QUOTED_ROOT/script" "$QUOTED_ROOT/assets/macos"
+cp "$SCRIPT_DIR/install_desktop_launcher.sh" "$SCRIPT_DIR/build_and_run.sh" "$QUOTED_ROOT/script/"
+cp "$SCRIPT_DIR/../assets/macos/eeg-lab-icon.png" "$QUOTED_ROOT/assets/macos/"
+MINDMELD_DESKTOP_APP="$TEST_ROOT/Quoted Launcher.app" "$QUOTED_ROOT/script/install_desktop_launcher.sh" >/dev/null
+/usr/bin/codesign --verify --deep --strict "$TEST_ROOT/Quoted Launcher.app"
+
+echo "Nexus launcher migration, reinstall, quoted paths and custom-destination tests passed."

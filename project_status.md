@@ -2,6 +2,15 @@
 
 Public repository: [zook111/Nexus_BCI](https://github.com/zook111/Nexus_BCI).
 
+## Offered student updates, 19 October 2026
+
+- The user approved offered Update and restart behaviour. Native startup checks the protected public main branch, offers the pinned revision before starting services, and keeps offline/current-version startup usable. There is no HTTP software-install endpoint and no silent installation.
+- Git fast-forward/local-edit/ignored-file protections, an atomic transaction journal, recoverable dependency/code backups and ordinary failure rollback preserve recordings and local settings. Existing app processes/ports block installation; the launcher kernel lock covers update and startup. A stable copied worker uses base Python and macOS curl TLS trust.
+- The updater refreshes the correct installed shortcut/icon, including a custom app path. Student README/Help/setup instructions cover save/stop/open, Update and restart/Not now, offline behaviour and helper-led bootstrap for pre-feature installs.
+- Verification so far: 51 updater tests pass, using real temporary Git repos, real virtual-environment rollback and isolated update/recovery control fixtures. Native launcher/kernel-lock/updater-result tests and native installer/signing/quoted-path tests pass. Backend Ruff and 164 tests, frontend lint/110 tests/production build pass. The three-page setup PDF was rendered and its commands, six links and production asset checked. In-app Help and the PDF opening were verified at 1280×720 without app warnings/errors; the README screenshot is refreshed. Review requirements are current-head review/CI, resolved comments and the five-minute hold before merging. No real checkout was updated by these tests, no participant data was used and independent Intel/Ventura/physical EEG validation remains outstanding.
+
+- Review corrections: allow the tracked `.env.example` templates and validate the actual repository tree; guard reverse checkout collisions and use ignore-preserving checkout with a conditional main-ref update during rollback; gate and record installer process groups before execution, terminate/wait for transient descendants before restoration, and reconcile interrupted activity by PID/start identity and a unique command nonce. New tests cover delayed writers, worker death, unrelated PIDs, source-recovery interruption and private ignored-file/directory collisions. Dependency recovery records each directory identity before rename, resumes a crash before its completion write, and refuses an unexpectedly replaced directory. A temporary exact-source smoke test started/verified/stopped the real backend and frontend through supervised handoff with the board idle and no headset connection.
+
 ## EEG Lab Dock icon, 19 October 2026
 
 - Created a mint neural-loop/EEG glyph on a dimensional ink-blue tile with transparent margins. The launcher installer uses the new 1024-pixel source to build native 16–1024-pixel ICNS representations; the existing project mark remains available.

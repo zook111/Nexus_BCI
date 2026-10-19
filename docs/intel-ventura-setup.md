@@ -79,6 +79,18 @@ cd ~/Documents/nexus
 
 Once installation is finished, you can normally open the app from the Desktop launcher without typing commands.
 
+## Keep the app and guides updated
+
+You will not need to type Git commands for everyday updates.
+
+1. Finish and save your experiment and recording. Stop and Reset the board. Double-click **Nexus Server** to stop its services; closing the browser alone does not stop them.
+2. Open **Nexus Server** again. If an update is offered, choose **Update and restart**, or **Not now** to use your installed version.
+3. Keep the Mac awake and online while an update installs. This may take several minutes. The workspace opens when ready; recordings and local settings stay in place.
+
+Offline checks still let the installed app open. No offer can mean the check was unavailable. Local code edits block updates rather than being discarded. If installation fails, the updater tries to reopen the previous version. If it asks for help, keep the app stopped and ask your helper. Do not delete the project folder or recovery copies.
+
+Older installations need one helper-led source update and launcher reinstall to gain this feature. Fresh setup includes it.
+
 <!-- pagebreak -->
 
 # Your first recording

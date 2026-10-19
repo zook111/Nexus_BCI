@@ -83,6 +83,16 @@ To install manually, create a Python 3.12+ `.venv`, install `pip install -e 'bac
 
 </details>
 
+## Updates without Terminal
+
+The Desktop launcher checks for a newer reviewed `main` version before starting the app. Choose **Update and restart** to install the app and guides, refresh the shortcut/icon and open the workspace, or **Not now** to use the installed version. Installation can take several minutes and needs internet. A failed/offline check still lets the installed version open; no offer does not prove you are up to date.
+
+Finish and save the experiment/recording first. Stop and Reset the board, double-click **Nexus Server** to stop its services, then open it again to receive an update offer. Closing the browser alone does not stop the app. Updates never stop an active session to install themselves.
+
+The updater refuses local code edits, unexpected files, divergent branches, conflicting processes and incoming files that would replace local data/settings. It keeps a recovery copy of code/dependencies and restores the previous version after an ordinary installation/startup failure. If recovery needs help, keep the app stopped and follow the message. Recordings and local settings are not replaced. Only the protected public repository is used; system Python/Node are not upgraded.
+
+For older installations, a helper must first bring the source folder to the reviewed `main` version and rerun `./script/install_desktop_launcher.sh` once. Fresh installs include this behaviour. This is a source-install updater, not a standalone DMG installer. Local stage/exit-code logs are under `~/Library/Application Support/Mindmeld Launcher/updates/<checkout-id>/update.log`; they omit command output and credentials.
+
 ## Turn it into a school project
 
 A useful first question is:

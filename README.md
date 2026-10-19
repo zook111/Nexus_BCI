@@ -2,7 +2,7 @@
 
 <img src="frontend/public/nexus-symbol.svg" width="80" alt="Nexus project signal mark" />
 
-# Dr K’s EEG Lab
+# Nexus EEG Lab
 
 ### Explore signals. Run experiments. Learn the maths.
 
@@ -12,9 +12,9 @@ A local EEG science workspace for students and curious researchers.
 
 </div>
 
-![Dr K’s EEG Lab console showing simulated EEG signals](docs/images/eeg-lab-console.jpg)
+![Nexus EEG Lab console showing simulated EEG signals](docs/images/eeg-lab-console.jpg)
 
-Dr K’s EEG Lab is a local workspace for exploring EEG with an OpenBCI headset. It brings live waveforms, electrode quality, labelled trials and a small machine-learning classifier into one app, with an interactive maths lesson to explain what happens along the way.
+Nexus EEG Lab is a local workspace for exploring EEG with an OpenBCI headset. It brings live waveforms, electrode quality, labelled trials and a small machine-learning classifier into one app, with an interactive maths lesson to explain what happens along the way.
 
 The source project remains **Nexus BCI** ([Nexus_BCI](https://github.com/zook111/Nexus_BCI)), and the desktop launcher is still called **Nexus Server**.
 
@@ -40,7 +40,7 @@ Send your team the [beginner Intel/Ventura setup guide (PDF)](docs/intel-ventura
 
 If Git prompts for Apple's Command Line Tools, finish that installation first. You can start it with `xcode-select --install`; the full Xcode application is not needed. After installing Python and Node, open a new Terminal and check `python3.13 --version` and `node --version`.
 
-### 2. Install Dr K’s EEG Lab
+### 2. Install Nexus EEG Lab
 
 ```bash
 git clone https://github.com/zook111/Nexus_BCI.git nexus
@@ -121,7 +121,7 @@ Read the [Experiment Lab method and limitations](docs/experiment-lab.md) before 
 
 ## Learn what the classifier is doing
 
-![Dr K’s EEG Lab interactive covariance lesson using invented data](docs/images/eeg-lab-lesson.jpg)
+![Nexus EEG Lab interactive covariance lesson using invented data](docs/images/eeg-lab-lesson.jpg)
 
 ```mermaid
 flowchart LR
@@ -146,7 +146,7 @@ The real classifier uses OAS-shrinkage covariance with pyRiemann and scikit-lear
 
 Open **Help** in the app to find all four PDFs: Intel/Ventura setup, first experiment, hardware session checklist and first-week research. They are bundled for offline reading and open in a separate tab. Common troubleshooting steps are also available in Help. External research and manufacturer links require internet access.
 
-![Dr K’s EEG Lab Help section with student guide links](docs/images/eeg-lab-help.png)
+![Nexus EEG Lab Help section with student guide links](docs/images/eeg-lab-help.png)
 
 ## Connect the headset
 

@@ -2,6 +2,13 @@
 
 Public repository: [zook111/Nexus_BCI](https://github.com/zook111/Nexus_BCI).
 
+## Nexus EEG Lab product name, 19 October 2026
+
+- Renamed the visible app header, browser title/description, Doctor Demo product label and native update messages to **Nexus EEG Lab**. README, current student instructions and brand guidance use the same name. Repository, Nexus Server shortcut, internal module names, settings and data paths remain compatible.
+- Regenerated the Intel/Ventura setup and hardware packet PDFs, including page headers and document titles. The three setup pages and six hardware pages retain their instructions and link destinations. Refreshed Console, covariance-lesson and Help screenshots from the actual app using synthetic/invented data only.
+- The existing letter-free Dock icon and project mark are retained. Older product names in the initial-release history and the exact original icon-generation prompt are historical records, not current UI copy.
+- Verification: Node 24 frontend lint, all 110 tests and production build pass; updater Ruff and 51 tests pass. Nine rendered PDF pages were inspected and their extracted instructions/links compared with the previous PDFs. Browser checks cover synthetic Connect/Start/Stop/Reset, the covariance lesson, Help, Doctor Demo label and a 375-pixel header with no warnings/errors. No physical headset was used. Required current-head review/CI, resolved comments and the five-minute hold apply before merge.
+
 ## Student GitHub issue reporting, 19 October 2026
 
 - Added a browser-only student guide covering what an issue is, signing in or asking a helper to submit, searching existing reports, writing a reproducible report, checking screenshots, and returning to the same issue after a fix. A clearly fictional Synthetic example teaches the expected detail without creating a practice issue.

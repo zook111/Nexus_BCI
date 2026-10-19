@@ -709,14 +709,14 @@ def ensure_stopped(root: Path, state: Path) -> None:
 
 def offer_version(current: str, target: str) -> bool:
     message = (
-        f"A newer version of Dr K’s EEG Lab is available.\n\n"
+        f"A newer version of Nexus EEG Lab is available.\n\n"
         f"Installed: {current[:8]}\nUpdate: {target[:8]}\n\n"
         "Update and restart installs the app and guides, then opens the workspace. "
         "This can take several minutes. Keep the Mac awake and connected to the internet. "
         "Your recordings and local settings stay in place. Not now opens your current version."
     )
     script = """on run argv
-set answer to display dialog (item 1 of argv) with title "EEG Lab updates" buttons {"Not now", "Update and restart"} default button "Update and restart" cancel button "Not now"
+set answer to display dialog (item 1 of argv) with title "Nexus EEG Lab updates" buttons {"Not now", "Update and restart"} default button "Update and restart" cancel button "Not now"
 return button returned of answer
 end run"""
     try:
@@ -733,11 +733,11 @@ end run"""
 
 def show_message(message: str, *, error: bool = False) -> None:
     script = """on run argv
- display dialog (item 1 of argv) with title "EEG Lab updates" buttons {"OK"} default button "OK"
+ display dialog (item 1 of argv) with title "Nexus EEG Lab updates" buttons {"OK"} default button "OK"
 end run"""
     if not error:
         script = """on run argv
- display notification (item 1 of argv) with title "EEG Lab updates"
+ display notification (item 1 of argv) with title "Nexus EEG Lab updates"
 end run"""
     try:
         subprocess.run(
@@ -913,7 +913,7 @@ def worker_run(updater: Updater, launcher: Path, target: str) -> int:
                 start=start,
                 stop=stop,
             )
-            show_message("EEG Lab and its guides are updated. Opening the workspace.")
+            show_message("Nexus EEG Lab and its guides are updated. Opening the workspace.")
         return 20
     except RestoredUpdate as exc:
         show_message(str(exc), error=True)
@@ -954,7 +954,7 @@ def main() -> int:
         return startup(updater, arguments.launcher)
     except (UpdateError, OSError, ValueError, subprocess.SubprocessError):
         show_message(
-            "EEG Lab could not verify update recovery. Ask your helper before starting the app. No local files were discarded.",
+            "Nexus EEG Lab could not verify update recovery. Ask your helper before starting the app. No local files were discarded.",
             error=True,
         )
         return 1

@@ -26,6 +26,8 @@ The source project remains **Nexus BCI** ([Nexus_BCI](https://github.com/zook111
 
 **Students: [start with this checklist](docs/student-start-here.md).** It puts every guide in order, explains what success looks like, and gives recovery steps if you get stuck.
 
+**Found a problem or have a question?** Follow the [student guide to GitHub issues](docs/report-a-problem.md), then [open an issue](https://github.com/zook111/Nexus_BCI/issues/new/choose). The forms explain what to include. No coding or Terminal is needed. Issues are public; keep participant data and personal information private.
+
 ### 1. Get the essentials
 
 For the recommended setup, use **macOS 13.5 or later**, **Python 3.12+**, **Node 24** and **Git**. Install Python from [python.org](https://www.python.org/downloads/macos/) and Node from [nodejs.org](https://nodejs.org/en/download). Node's [platform requirements](https://github.com/nodejs/node/blob/v24.x/BUILDING.md#platform-list) explain the macOS minimum.

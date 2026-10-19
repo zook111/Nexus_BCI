@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Read the student reporting guide
+    url: https://github.com/zook111/Nexus_BCI/blob/main/docs/report-a-problem.md
+    about: Follow the browser-only steps to report a problem and check for replies.

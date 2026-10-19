@@ -1,0 +1,65 @@
+name: Report a problem
+description: Something in EEG Lab is not working. No coding knowledge needed.
+title: "[Problem] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe what you saw so Karl can investigate. Read the [student reporting guide](https://github.com/zook111/Nexus_BCI/blob/main/docs/report-a-problem.md) if this is your first issue.
+
+        **This report is public.** Do not include names, faces, school/contact details, passwords, API keys, Mac serial numbers, participant recordings, EEG exports, completed session sheets, or participant results. Check screenshots for private tabs, notifications, paths, and labels. Use Synthetic for examples where possible. Tell Karl privately about sensitive information or security problems.
+  - type: textarea
+    id: steps
+    attributes:
+      label: What did you do?
+      description: List the buttons or steps before the problem. If it happened only once, say so. Do not repeat a participant experiment to reproduce it.
+      placeholder: "1. Opened Console.\n2. Chose Synthetic, then Connect and Start.\n3. ..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      placeholder: I expected the practice recording to appear in the list.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+      description: Include the exact error if safe to share, and whether it happens every time. It is fine to say that you do not know.
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Which signal source were you using?
+      options:
+        - Synthetic (simulated EEG)
+        - Headset (Cyton, 8 channels)
+        - Headset (Cyton Daisy, 16 channels)
+        - Saved recording (keep the recording private)
+        - Setup or launcher, before connecting
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: setup
+    attributes:
+      label: Which Mac and browser were you using?
+      description: Find the Mac model and macOS version under Apple menu → About This Mac. Omit its serial number. Add browser/version and last app update if known. No Terminal needed; write "not sure" for anything unknown.
+      placeholder: "Mac model: MacBook Retina 12-inch, 2017\nmacOS: Ventura 13.7.8\nBrowser: Chrome, version not known\nLast app update: not sure"
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Anything else that might help? (optional)
+      description: Say what you already tried. You may attach a cropped, checked screenshot here. Share only a relevant, checked error excerpt, never full logs, .env files, or participant data.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Check before posting
+      options:
+        - label: I checked my text and attachments. They contain no personal information, secrets, participant recordings, or participant results. I understand that this issue is public.
+          required: true

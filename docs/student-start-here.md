@@ -66,6 +66,8 @@ If installation fails, follow the message. The updater attempts to reopen the pr
 
 Try the matching step below. The installed app's **Help** tab also contains troubleshooting that works offline.
 
+To ask Karl for help or report a problem, follow [Report a problem on GitHub](report-a-problem.md). It walks through signing in, filling in a report, adding a safe screenshot, and checking for replies. You can also use **Help → Report a problem** in the app. No Terminal or coding is needed to submit a report. Issues are public, so keep participant data and personal information private.
+
 | What you see | What to do |
 | --- | --- |
 | `command not found` during setup | Open a new Terminal after installing Python and Node. Check the three version commands in the setup guide. If one is still missing, repeat that standard installer step. |
@@ -79,7 +81,7 @@ Try the matching step below. The installed app's **Help** tab also contains trou
 | No spoken cue | Follow the visible instruction. Check volume and browser sound permissions. Speech support varies; setup works without a paid speech key. |
 | Feedback audio is silent | It starts muted. Unmute only when ready; live feedback needs fresh, usable signal and enough confidence. Calm mode also needs a completed baseline. |
 
-If you still need help, save your work and note the exact message, board type and whether Synthetic works. Open Terminal. Enter the first line to open the project folder, then run the diagnostic commands one at a time:
+If you still need help, save your work and note the exact message, board type and whether Synthetic works. You can submit a report with those details. If your helper asks for service diagnostics, open Terminal. Enter the first line to open the project folder, then run the diagnostic commands one at a time:
 
 ```bash
 cd ~/Documents/nexus

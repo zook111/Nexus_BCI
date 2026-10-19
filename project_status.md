@@ -2,6 +2,13 @@
 
 Public repository: [zook111/Nexus_BCI](https://github.com/zook111/Nexus_BCI).
 
+## Student GitHub issue reporting, 19 October 2026
+
+- Added a browser-only student guide covering what an issue is, signing in or asking a helper to submit, searching existing reports, writing a reproducible report, checking screenshots, and returning to the same issue after a fix. A clearly fictional Synthetic example teaches the expected detail without creating a practice issue.
+- Added guided problem and question/suggestion forms, with unknown setup details accepted and an explicit public-data check. No labels, assignments, accounts or issues are created automatically. Participant EEG, results, personal information and secrets stay out of public reports; sensitive/security problems go to the helper privately.
+- README, student starting page and in-app Help link to the guide and issue chooser. Service diagnostics are optional helper-led follow-up, not a prerequisite for reporting. The Help screenshot is refreshed.
+- Verification: Node 24 frontend lint, all 110 tests and production build pass. YAML forms parse with unique field IDs and required privacy confirmations; local guide references resolve. The idle Help panel and its link destinations were checked in the browser on isolated loopback ports with no board connection. Backend runtime and PDFs are unchanged; required CI/review and the five-minute latest-revision hold apply before merge. The live GitHub form chooser can be checked after the templates reach main, without submitting a test issue.
+
 ## Offered student updates, 19 October 2026
 
 - The user approved offered Update and restart behaviour. Native startup checks the protected public main branch, offers the pinned revision before starting services, and keeps offline/current-version startup usable. There is no HTTP software-install endpoint and no silent installation.

@@ -8,7 +8,7 @@
 
 A local EEG science workspace for students and curious researchers.
 
-[Start here](#start-here) · [First experiment (PDF)](docs/eyes-open-closed-experiment-guide.pdf) · [Research guide](docs/student-starter-guide.pdf) · [Experiment Lab](docs/experiment-lab.md) · [Contributing](CONTRIBUTING.md)
+[Start here](#start-here) · [Hardware session packet](docs/hardware-session-packet.pdf) · [First experiment (PDF)](docs/eyes-open-closed-experiment-guide.pdf) · [Research guide](docs/student-starter-guide.pdf) · [Experiment Lab](docs/experiment-lab.md) · [Contributing](CONTRIBUTING.md)
 
 </div>
 
@@ -88,6 +88,8 @@ A useful first question is:
 > **Can a classifier distinguish eyes-open from eyes-closed trials in a separate recording from the same participant, better than chance?**
 
 Follow the [eyes-open vs eyes-closed experiment guide (PDF)](docs/eyes-open-closed-experiment-guide.pdf) for step-by-step trial collection, labelling, separate training/test recordings and a results worksheet. It is written for a two-student team using Experiment Lab.
+
+For your first physical-headset session, use the [printable session packet](docs/hardware-session-packet.pdf), its [copyable checklist](docs/hardware-session-packet.md), and the [blank session record sheet](docs/hardware-session-record-sheet.md). They cover the Intel Ventura setup, ear clips and electrode contact, fresh samples, separate training/test recordings, save/replay checks, and private data storage. The packet is prepared guidance; complete the checks on your actual machine before treating installation or EEG acquisition as verified.
 
 Use the [two-page student starter guide](docs/student-starter-guide.pdf) for clickable introductory reading and a first-week plan. Work together on the basics, split the biology/hardware and maths/analysis reading, then teach it back to each other.
 

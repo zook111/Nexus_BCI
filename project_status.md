@@ -2,6 +2,16 @@
 
 Public repository: [zook111/Nexus_BCI](https://github.com/zook111/Nexus_BCI).
 
+## Physical-session preparation, 17 October 2026
+
+- Read-only reconciliation of PR #8: open at `831f5b85e0efd176e683c3a19a7c56d6e616a08e`; all three existing head checks pass and no unresolved review threads are present. GitHub's visible Codex summary covers the earlier `e3ba9c8`; the PR description records final-head CodeRabbit review with zero issues. No new review run or merge was performed. Main protection and the existing review/hold rules remain unchanged.
+- Prepared a printable physical-session packet, copyable checklist, and blank local record sheet, linked from the README. The packet covers intended-machine setup, electrode/reference/bias fit, freshness and quality gates, separate eye-state training/test recordings, save/replay/persistence, and private outputs.
+- Documentation checks passed: six rendered PDF pages inspected, 16 PDF URL links and two internal links checked, 26 relative Markdown links resolved, and ignored participant-output paths verified. Runtime checks were not rerun for documentation-only changes.
+- PR #9 review correction: verify the saved rate, board, mains frequency, and channel list in Experiment Lab's visible Review labels metadata. Console replay verifies samples and navigation, but its header does not display sample rate. The source checklist, PDF, and blank record sheet use the observable checks.
+- The blank sheet now links to the online packet and names the local offline PDF explicitly, so copying it into ignored session notes does not break its packet reference.
+- The [durable readiness checkpoint](docs/checkpoints/2026-10-17-session-readiness.md) separates inspected software evidence from unexecuted physical and classifier checks. No servers, hardware acquisition, heavy test run, or remote-host work was started for this documentation preparation.
+- Next dependency: Karl provides the intended Intel MacBook, fitted headset, and a participant/operator for the practical session. Independent Intel installation, stable physical EEG quality, usable independent recording pairs, and wearer-specific classifier performance remain unverified.
+
 ## Initial public release
 
 - Visible app, browser and Doctor Demo title: **Dr K’s EEG Lab**, with “Explore signals. Run experiments. Learn the maths.” Nexus remains the project/repository and launcher name. Header and browser title were checked on desktop and a 375-pixel viewport, with no horizontal overflow or browser warnings.

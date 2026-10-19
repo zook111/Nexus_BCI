@@ -2,6 +2,12 @@
 
 Public repository: [zook111/Nexus_BCI](https://github.com/zook111/Nexus_BCI).
 
+## macOS installer assessment, 19 October 2026
+
+- [Standalone DMG readiness](docs/macos-installer-readiness.md) records the inspected launcher, signing state, native-architecture constraints, proposed bundle/lifecycle and acceptance checks. The existing launcher requires its source checkout, Python environment and Node/Vite dependencies; it is not a standalone installer.
+- A distributable Intel bundle needs production UI assets served locally, bundled compatible Python/native dependencies, writable per-user data paths, verified x86_64 packaging, Developer ID signing and notarization. The current Mac/project environment is ARM and no Developer ID Application identity is installed. PyInstaller is not installed in the project environment.
+- This is an inspected plan, not a built DMG, signed release, intended-machine test or account change. No distribution upload or security-policy bypass was performed. Continue using the source-install guide for the next physical session.
+
 ## Physical-session preparation, 17 October 2026
 
 - Read-only reconciliation of PR #8: open at `831f5b85e0efd176e683c3a19a7c56d6e616a08e`; all three existing head checks pass and no unresolved review threads are present. GitHub's visible Codex summary covers the earlier `e3ba9c8`; the PR description records final-head CodeRabbit review with zero issues. No new review run or merge was performed. Main protection and the existing review/hold rules remain unchanged.

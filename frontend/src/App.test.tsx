@@ -322,3 +322,36 @@ it('shows an active serial port discovered by another window after this tab load
   expect(screen.queryByText('Active backend serial port')).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Connect' })).toBeDisabled()
 })
+
+it.each(['resolve', 'reject'])('ignores an old replay request that later %ss after a shared stream start', async outcome => {
+  vi.stubEnv('VITE_OPENBCI_AUTOCONNECT_SERIAL', '')
+  apiMock.board.mockResolvedValue(preparedBoard)
+  const saved = { ...emptyRecording, session_id: 'pending-replay', label: 'Saved practice', sampling_rate: 250, sample_count: 2 }
+  const preview = { recording: saved, offset: 0, total_rows: 2, row_count: 2, headers: ['timestamp', 'Fp1'], rows: [[1, 2], [2, 3]] }
+  let resolve: (value: typeof preview) => void = () => {}
+  let reject: (error: Error) => void = () => {}
+  apiMock.recordings.mockResolvedValue([saved])
+  apiMock.recordingPreview.mockReturnValue(new Promise<typeof preview>((yes, no) => { resolve = yes; reject = no }))
+  apiMock.recordingAnalysis.mockResolvedValue({ recording: saved, offset: 0, total_rows: 2, sample_count: 2, sampling_rate: 250, bandpass_low_hz: 1, bandpass_high_hz: 45, channels: [] })
+  render(<App />)
+  await screen.findByRole('button', { name: 'Preview' })
+  async function broadcast(status: 'prepared' | 'streaming') {
+    await act(async () => {
+      sockets.at(-1)?.onmessage?.(new MessageEvent('message', {
+        data: JSON.stringify({ ...preparedBoard, status, sample_count: 0, timestamps: [], channels: [] }),
+      }))
+    })
+  }
+  await broadcast('prepared')
+  fireEvent.click(screen.getByRole('button', { name: 'Preview' }))
+  await waitFor(() => expect(apiMock.recordingPreview).toHaveBeenCalled())
+  await broadcast('streaming')
+  await act(async () => {
+    if (outcome === 'resolve') resolve(preview)
+    else reject(new Error('Obsolete replay failure'))
+  })
+  expect(screen.queryByText('Replay window loaded')).not.toBeInTheDocument()
+  expect(screen.queryByText('Obsolete replay failure')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Preview' })).toBeEnabled()
+  expect(apiMock.signalQuality).toHaveBeenCalled()
+})

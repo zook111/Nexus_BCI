@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Report a security problem privately
+    url: https://github.com/zook111/Nexus_BCI/security/advisories/new
+    about: For a possible security flaw or exposed credential. Do not open a public issue.
   - name: Read the student reporting guide
     url: https://github.com/zook111/Nexus_BCI/blob/main/docs/report-a-problem.md
     about: Follow the browser-only steps to report a problem and check for replies.

@@ -50,7 +50,8 @@ export function StudentHelp() {
     <div className="panel student-help__notes">
       <h3>Report a problem or ask a question</h3>
       <p>No Terminal or coding needed. Sign in to GitHub, check existing issues, then choose a form. Describe your steps, what you expected, what happened, and your Mac/browser. “Not sure” is fine for details you do not know. Bookmark your issue to check for replies.</p>
-      <p>Issues are public. Keep names, faces, school/contact details, passwords, API keys, serial numbers, participant recordings and results private. Check screenshots for private tabs, notifications, paths and labels. Tell your helper privately about sensitive information or security problems.</p>
+      <p>Issues are public. Keep names, faces, school/contact details, passwords, API keys, serial numbers, participant recordings and results private. Check screenshots for private tabs, notifications, paths and labels.</p>
+      <p>For a security flaw or exposed credential, <a href="https://github.com/zook111/Nexus_BCI/security/advisories/new" target="_blank" rel="noopener noreferrer">report a security problem privately (online, opens in a new tab) <ExternalLink size={14} aria-hidden="true" /></a>. If that page is unavailable, or you need to discuss other private information, ask your parent or teacher to contact Karl privately. Do not post it in an issue.</p>
       <p><a href="https://github.com/zook111/Nexus_BCI/blob/main/docs/report-a-problem.md" target="_blank" rel="noopener noreferrer">Learn how to report an issue (online, opens in a new tab) <ExternalLink size={14} aria-hidden="true" /></a></p>
       <p><a href="https://github.com/zook111/Nexus_BCI/issues/new/choose" target="_blank" rel="noopener noreferrer">Report a problem or ask a question (online, opens in a new tab) <ExternalLink size={14} aria-hidden="true" /></a></p>
     </div>

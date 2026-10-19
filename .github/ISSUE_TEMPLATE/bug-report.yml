@@ -8,6 +8,8 @@ body:
         Describe what you saw so Karl can investigate. Read the [student reporting guide](https://github.com/zook111/Nexus_BCI/blob/main/docs/report-a-problem.md) if this is your first issue.
 
         **This report is public.** Do not include names, faces, school/contact details, passwords, API keys, Mac serial numbers, participant recordings, EEG exports, completed session sheets, or participant results. Check screenshots for private tabs, notifications, paths, and labels. Use Synthetic for examples where possible. Tell Karl privately about sensitive information or security problems.
+
+        For a possible security flaw or exposed credential, use a [private vulnerability report](https://github.com/zook111/Nexus_BCI/security/advisories/new). Read the [security policy](https://github.com/zook111/Nexus_BCI/blob/main/SECURITY.md). If that route is unavailable, ask your parent or teacher to contact Karl privately; do not post sensitive information here.
   - type: textarea
     id: steps
     attributes:

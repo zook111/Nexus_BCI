@@ -10,7 +10,9 @@ Finish and save your recording or experiment if the app still allows it. If samp
 
 **This repository and its issues are public. Anyone can read them.** Leave out names, faces, school or contact details, passwords, API keys, and your Mac's serial number. Keep participant recordings, EEG exports, completed session sheets, and participant results private, even if they use participant codes.
 
-Before sharing a screenshot, crop it to the relevant controls or error. Check browser tabs, notifications, file paths, and recording labels. Use simulated data for a screenshot if possible. Never upload `.env` files or whole log folders. If the problem involves private information or a possible security flaw, tell Karl privately instead of opening a public issue.
+Before sharing a screenshot, crop it to the relevant controls or error. Check browser tabs, notifications, file paths, and recording labels. Use simulated data for a screenshot if possible. Never upload `.env` files or whole log folders.
+
+For a possible security flaw or exposed credential, use GitHub's [private vulnerability report](https://github.com/zook111/Nexus_BCI/security/advisories/new), not a public issue. The [security policy](../SECURITY.md) explains this route. If that page is unavailable, or you need to discuss other private information, ask your parent or teacher to contact Karl privately. Do not post the information in an issue while waiting for help.
 
 ## 2. Sign in and look for an existing report
 

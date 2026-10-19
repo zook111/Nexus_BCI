@@ -2,6 +2,14 @@
 
 Public repository: [zook111/Nexus_BCI](https://github.com/zook111/Nexus_BCI).
 
+## Ambient pad verification, 19 October 2026
+
+- The Brain Pad is the Feedback Lab's **Ambient pad**. Regression tests reproduced stale-source playback, uncancellable pending starts, nonfinite-score gating, and an old sound's failed start disposing a newer engine. The fix requires fresh live source timestamps, a finite score, usable signal and at least 55% confidence. Calm audio checks both stream and calm-feature timestamps; intentionally selected saved replay remains supported and labelled.
+- Mute is available while browser playback permission settles. Request ownership prevents late failures from altering a newer sound. Sound changes and view unmount dispose the old engine, and closed gates rapidly fade Web Audio or zero MP3 volume. Audio still starts muted and uses bundled media or local Web Audio only.
+- Source-level regression coverage includes both audio engines, missing/stale source timestamps, recovery, confidence threshold, noisy/nonfinite input, pending starts, voice changes and unmount cleanup. Browser checks on an isolated synthetic board verified Web Audio and MP3 start, mute and voice selection, then a paused test backend produced **Signal paused** and a closed audio gate despite the retained high-confidence score. No browser warnings/errors appeared. All six bundled feedback MP3s passed macOS decoder inspection. No physical-headset or subjective listening-quality claim is made.
+- PR #9's saved-rate and relocated-sheet findings were corrected and reviewed, all checks passed and the five-minute latest-revision review period elapsed before merge. PR #8's remaining review/hold gates are being handled separately.
+- DMG assessment: the current Desktop app is a valid ad-hoc-signed source-checkout launcher, not a standalone installer. A distributable Intel app needs bundled runtime/static assets, writable per-user data paths, a verified x86_64 dependency/build environment, Developer ID signing and notarization. This Mac's current environment is ARM and no Developer ID Application identity is installed. No DMG, account change or public release was produced.
+
 ## Physical-session preparation, 17 October 2026
 
 - Read-only reconciliation of PR #8: open at `831f5b85e0efd176e683c3a19a7c56d6e616a08e`; all three existing head checks pass and no unresolved review threads are present. GitHub's visible Codex summary covers the earlier `e3ba9c8`; the PR description records final-head CodeRabbit review with zero issues. No new review run or merge was performed. Main protection and the existing review/hold rules remain unchanged.

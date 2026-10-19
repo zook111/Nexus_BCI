@@ -8,6 +8,7 @@ from pathlib import Path
 from re import sub
 from tempfile import NamedTemporaryFile
 from time import monotonic
+from uuid import uuid4
 
 import numpy as np
 from brainflow.board_shim import BoardIds, BoardShim, BrainFlowInputParams
@@ -84,6 +85,7 @@ class BrainFlowBoardService:
         self._board_kind: BoardKind | None = None
         self._board_id: int | None = None
         self._serial_port: str | None = None
+        self._connection_id: str | None = None
         self._status = BoardStatus.idle
         self._last_error: str | None = None
         self._recording_thread: threading.Thread | None = None
@@ -158,6 +160,7 @@ class BrainFlowBoardService:
             self._board_kind = request.board
             self._board_id = board_id
             self._serial_port = request.serial_port
+            self._connection_id = uuid4().hex
             self._status = BoardStatus.prepared
             self._last_error = None
             return self._state_locked()
@@ -215,18 +218,13 @@ class BrainFlowBoardService:
 
     def snapshot(self, max_samples: int) -> StreamSnapshot:
         with self._lock:
-            if self._board is None or self._board_id is None:
-                return StreamSnapshot(status=self._status, message=self._last_error)
-            if self._status != BoardStatus.streaming:
-                return StreamSnapshot(
-                    status=self._status,
-                    board=self._board_kind,
-                    board_id=self._board_id,
-                    sampling_rate=self._safe_sampling_rate_locked(),
-                    message=self._last_error,
-                )
+            state = self._state_locked()
+            if state.status != BoardStatus.streaming or self._board is None:
+                return StreamSnapshot(**state.model_dump())
 
             data = self._current_board_data_locked(max_samples)
+            if self._status != BoardStatus.streaming:
+                return StreamSnapshot(**self._state_locked().model_dump())
             sample_count = int(data.shape[1]) if data.size else 0
             timestamp_channel = self._safe_timestamp_channel_locked()
             timestamps: list[float] = []
@@ -247,14 +245,10 @@ class BrainFlowBoardService:
                 )
 
             return StreamSnapshot(
-                status=self._status,
-                board=self._board_kind,
-                board_id=self._board_id,
+                **state.model_dump(),
                 sample_count=sample_count,
-                sampling_rate=self._safe_sampling_rate_locked(),
                 timestamps=timestamps,
                 channels=channels,
-                message=self._last_error,
             )
 
     def dsp_summary(
@@ -919,6 +913,7 @@ class BrainFlowBoardService:
         self._reconcile_board_locked()
         return BoardStateResponse(
             status=self._status,
+            connection_id=self._connection_id,
             board=self._board_kind,
             board_id=self._board_id,
             serial_port=self._serial_port,
@@ -1018,6 +1013,7 @@ class BrainFlowBoardService:
                 self._board_kind = None
                 self._board_id = None
                 self._serial_port = None
+                self._connection_id = None
                 self._status = BoardStatus.idle
                 self._last_error = None
             else:

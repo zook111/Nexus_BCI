@@ -2,6 +2,16 @@
 
 Public repository: [zook111/Nexus_BCI](https://github.com/zook111/Nexus_BCI).
 
+## Ambient pad verification, 19 October 2026
+
+- The Brain Pad is the Feedback Lab's **Ambient pad**. Regression tests reproduced stale-source playback, uncancellable pending starts, nonfinite-score gating, and an old sound's failed start disposing a newer engine. The fix requires fresh live source timestamps, a finite score, usable signal and at least 55% confidence. Calm audio checks both stream and calm-feature timestamps; intentionally selected saved replay remains supported and labelled.
+- Mute is available while browser playback permission settles. Request ownership prevents late failures from altering a newer sound. Sound changes and view unmount dispose the old engine, and closed gates rapidly fade Web Audio or zero MP3 volume. Audio still starts muted and uses bundled media or local Web Audio only.
+- The pad controls use a full-width mute button with separate volume and sound columns, preventing the labels and slider from colliding in a narrow desktop sidebar. The mobile single-column layout remains available.
+- Source-level regression coverage includes both audio engines, missing/stale source timestamps, recovery, confidence threshold, noisy/nonfinite input, pending starts, voice changes and unmount cleanup. Browser checks on an isolated synthetic board verified Web Audio and MP3 start, mute and voice selection, then a paused test backend produced **Signal paused** and a closed audio gate despite the retained high-confidence score. No browser warnings/errors appeared. All six bundled feedback MP3s passed macOS decoder inspection. No physical-headset or subjective listening-quality claim is made.
+- The default Calm mode was also checked end to end on synthetic data: three advancing usable source windows preceded a six-second baseline; the pad remained gated while a baseline was required and opened after completion. A review concern about nonfinite oscillator frequencies was checked against `clampUnit`'s existing finite guard. The AudioParam mock now rejects nonfinite values, and NaN/positive-infinity/negative-infinity cases pass without throwing.
+- PRs #8 and #9 are merged after their findings were addressed, current-head reviews completed, all required checks passed, and the latest revisions had at least five minutes for review. The final #8 source head was `f080d1a`; its merge is `6dacb6e`. The Ambient pad fix is merged through PR #11 at `6fa356b`, also after clean review, passing checks and its five-minute hold. The combined frontend suite passes 110 tests with lint/build; backend CI passes 164 tests.
+- The [DMG readiness proposal](https://github.com/zook111/Nexus_BCI/pull/10) records that the current Desktop app is a valid ad-hoc-signed source-checkout launcher, not a standalone installer. A distributable Intel app needs bundled runtime/static assets, writable per-user data paths, a verified x86_64 dependency/build environment, Developer ID signing and notarization. This Mac's current environment is ARM and no Developer ID Application identity is installed. No DMG, account change or public release was produced.
+
 ## macOS installer assessment, 19 October 2026
 
 - [Standalone DMG readiness](docs/macos-installer-readiness.md) records the inspected launcher, signing state, native-architecture constraints, proposed bundle/lifecycle and acceptance checks. The existing launcher requires its source checkout, Python environment and Node/Vite dependencies; it is not a standalone installer.
@@ -43,6 +53,23 @@ Clean Python 3.12 / Node 24 setup, backend Ruff and 161 tests, frontend lint and
 - Binary-only dependency resolution for Intel macOS 13 succeeds for Python 3.12 and 3.13: 86 distributions each, including development/build dependencies.
 - BrainFlow 5.23.0 BoardController includes x86_64 with a macOS 10.13 target; the locked Rolldown 1.2.12 Intel binding targets macOS 10.12.
 - README gives a Python 3.13 standard installer route, Intel Node selection and explicit interpreter command. This is compatibility evidence, not an Intel/Ventura runtime or headset test.
+
+## Shared device state across browser windows (11 October 2026)
+
+- Stream frames now include the same device status, serial port and EEG channel metadata as `/api/board`. A second window follows Connect, Start, Stop, Reset and native-session recovery without reloading, and idle frames preserve the user's next board selection.
+- Released prepared sessions are reconciled before publishing a frame. A failed sample read returns a paused frame with current metadata. Stream recovery clears its own error message without clearing unrelated operation errors.
+- CodeRabbit's committed review raised one minor port-selection issue. Successful prepared/streaming frames now synchronize selections, while error frames preserve the operator's selected port for recovery; a regression assertion reproduces and verifies that fix.
+- Python 3.12 backend Ruff and 164 tests pass; Node 24 frontend lint, 88 tests and production build pass. Regression tests cover remote device transitions, optional legacy frames, malformed metadata and native loss before/after streaming.
+- Two Chrome tabs at an isolated loopback test URL followed simulated Connect → Start → Stop → Reset without refreshing the observer. Device controls, DSP and quality updated together. No app console warnings/errors were observed; one unrelated Chrome extension emitted a search-engine error. Screenshots and test data remain outside the tracked source.
+- No additional physical-headset test was performed. Stable electrode contact and a real eyes-open/closed recording still need a later hardware session. The hardware demo launcher was stopped for the night; the review does not certify EEG quality or classifier accuracy.
+- PR #8 follow-up review: a shared transition into streaming now clears saved replay and its analysis, matching the local Start action. Repeated streaming frames preserve an intentionally opened replay. The regression test covers both paths.
+- An observer now lists a shared session's active serial port even if the dongle appeared after that tab loaded. It is labelled as an active backend port without inventing a hardware recommendation; no extra connect action is issued.
+- Session-only port options are removed on reset, error or port changes. Connect requires a currently listed selected port, so a removed fallback cannot silently remain connectable. Discovered ports and the operator's idle board choice remain intact.
+- Exiting replay also invalidates pending preview/analysis requests. A late response or error cannot restore saved data or overwrite the live view after a shared start. Requests intentionally begun during a running stream remain supported.
+- Shared and local resets now use the same feedback cleanup, clearing prior-session trends, baseline, DSP and quality state. A browser regression verifies the observer history is emptied rather than concatenated across sessions.
+- Board snapshots carry a fresh connection identifier for each successful Connect, stable through Stop/Start and cleared on release. An observer detects a replacement even when a socket outage hid Reset/Connect and both visible statuses were streaming. A reconnect to the same connection preserves an intentionally opened replay; replacement resets live feedback and invalidates replay requests.
+- First-frame lifecycle comparisons use the loaded REST board context, preserving intentionally opened replay and completed prepared-board baselines. Replacement interrupts active calibration synchronously; retained marker exports carry their original board/recording context and an interruption flag instead of mixing sessions.
+- Live DSP, quality and calm readers restart on connection identity changes as well as status changes, cancelling old pending results and immediately requesting the replacement session's analysis.
 
 ## Known limits and next steps
 

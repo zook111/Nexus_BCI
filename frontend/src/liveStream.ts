@@ -1,4 +1,4 @@
-import type { StreamSnapshot } from './api'
+import type { BoardState, StreamSnapshot } from './api'
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -27,6 +27,23 @@ export function parseStreamSnapshot(data: string): StreamSnapshot {
     return { index: channel.index, label: channel.label, samples: channel.samples }
   })
   const result: StreamSnapshot = { status, sample_count: raw.sample_count, timestamps: raw.timestamps, channels }
+  if (raw.connection_id !== undefined) {
+    if (raw.connection_id !== null && (typeof raw.connection_id !== 'string' || !raw.connection_id)) {
+      throw new Error('Invalid connection identity')
+    }
+    result.connection_id = raw.connection_id
+  }
+  if (raw.serial_port !== undefined) {
+    if (raw.serial_port !== null && typeof raw.serial_port !== 'string') throw new Error('Invalid serial port')
+    result.serial_port = raw.serial_port
+  }
+  if (raw.eeg_channels !== undefined || raw.eeg_names !== undefined) {
+    if (!numbers(raw.eeg_channels) || !raw.eeg_channels.every(index => Number.isInteger(index) && index >= 0)
+      || !Array.isArray(raw.eeg_names) || !raw.eeg_names.every(name => typeof name === 'string')
+      || raw.eeg_channels.length !== raw.eeg_names.length) throw new Error('Invalid EEG metadata')
+    result.eeg_channels = raw.eeg_channels
+    result.eeg_names = raw.eeg_names
+  }
   if (raw.board !== undefined && raw.board !== null) {
     if (raw.board !== 'synthetic' && raw.board !== 'cyton' && raw.board !== 'cyton_daisy') throw new Error('Invalid board')
     result.board = raw.board
@@ -43,6 +60,35 @@ export function parseStreamSnapshot(data: string): StreamSnapshot {
     result.message = raw.message
   }
   return result
+}
+
+export function sharedBoardState(current: BoardState, snapshot: StreamSnapshot): BoardState {
+  if (!snapshot.eeg_channels || !snapshot.eeg_names) return current
+  const next: BoardState = {
+    status: snapshot.status,
+    connection_id: snapshot.connection_id ?? null,
+    board: snapshot.board ?? null,
+    board_id: snapshot.board_id ?? null,
+    serial_port: snapshot.serial_port ?? null,
+    sampling_rate: snapshot.sampling_rate ?? null,
+    eeg_channels: snapshot.eeg_channels,
+    eeg_names: snapshot.eeg_names,
+    message: snapshot.message ?? null,
+  }
+  // Preserve identity for unchanged metadata so sample frames do not restart
+  // consumers that depend on the board object or its channel arrays.
+  const same = current.status === next.status
+    && (current.connection_id ?? null) === next.connection_id
+    && (current.board ?? null) === next.board
+    && (current.board_id ?? null) === next.board_id
+    && (current.serial_port ?? null) === next.serial_port
+    && (current.sampling_rate ?? null) === next.sampling_rate
+    && (current.message ?? null) === next.message
+    && current.eeg_channels.length === next.eeg_channels.length
+    && current.eeg_channels.every((channel, index) => channel === next.eeg_channels[index])
+    && current.eeg_names.length === next.eeg_names.length
+    && current.eeg_names.every((name, index) => name === next.eeg_names[index])
+  return same ? current : next
 }
 
 export function connectLiveStream(url: string, handlers: {

@@ -1,5 +1,5 @@
 name: Report a problem
-description: Something in EEG Lab is not working. No coding knowledge needed.
+description: Something in Nexus EEG Lab is not working. No coding knowledge needed.
 title: "[Problem] "
 body:
   - type: markdown

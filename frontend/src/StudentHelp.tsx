@@ -30,7 +30,7 @@ export function StudentHelp() {
     <div className="panel student-help__start">
       <h3>Your first session</h3>
       <ol>
-        <li>Follow the setup PDF for your Intel MacBook on Ventura. The desktop launcher is called <strong>Nexus Server</strong>; it opens <strong>Dr K’s EEG Lab</strong>.</li>
+        <li>Follow the setup PDF for your Intel MacBook on Ventura. The desktop launcher is called <strong>Nexus Server</strong>; it opens <strong>Nexus EEG Lab</strong>.</li>
         <li>Practise in Console with <strong>Synthetic → Connect → Start</strong>. Save a short recording and reopen it with Preview. The signals are simulated.</li>
         <li>Before collecting participant data, agree your method with your teacher and work through the hardware checklist. Check fresh samples and at least three consecutive usable quality windows.</li>
         <li>Follow the experiment PDF. Use separate training and untouched test recordings for each participant.</li>

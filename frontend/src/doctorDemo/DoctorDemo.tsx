@@ -631,7 +631,7 @@ export function DoctorDemo({
     <section className={`doctor-demo doctor-demo--${phase}`} aria-label="Doctor Demo experience">
       <header className="doctor-demo__header">
         <div>
-          <span>Dr K’s EEG Lab · live EEG experience</span>
+          <span>Nexus EEG Lab · live EEG experience</span>
           <h2>{selectedEvent?.name ?? 'Create a demo room'}</h2>
         </div>
         <div className="doctor-demo__header-controls">

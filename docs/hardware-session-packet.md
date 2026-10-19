@@ -1,6 +1,6 @@
 # Run your first physical EEG session
 
-Dr K's EEG Lab | Two-student team | Prepared 17 October 2026
+Nexus EEG Lab | Two-student team | Prepared 17 October 2026
 
 **Goal:** install on the intended Intel MacBook, collect two separate labelled recordings, and reopen the saved data. A successful session produces usable recordings before any classifier claim.
 
@@ -12,7 +12,7 @@ This packet is **prepared**, not a completed hardware test. Software checks and 
 - [ ] Follow the [Intel installation guide](intel-ventura-setup.md). Use macOS 13.5 or later, standard Python 3.13, Node 24, and Git. The existing pinned installer links remain in that guide.
 - [ ] In Terminal, record `uname -m`, `sw_vers -productVersion`, `python3.13 --version`, `node --version`, and `git rev-parse HEAD` from the checkout. Expect `x86_64` on this Intel Mac.
 - [ ] Use `NEXUS_PYTHON=python3.13 ./script/setup.sh` and `./script/install_desktop_launcher.sh` in a fresh checkout. Do not copy another Mac's `.venv` or `node_modules`.
-- [ ] Open **Nexus Server** once. Confirm **Dr K's EEG Lab** opens at [localhost:5173](http://localhost:5173) and shows **API connected**.
+- [ ] Open **Nexus Server** once. Confirm **Nexus EEG Lab** opens at [localhost:5173](http://localhost:5173) and shows **API connected**.
 - [ ] In **Console**, select **Synthetic**, then **Connect** and **Start**. Record 30 seconds as `synthetic-practice`. Use **Capture setup**, then **Save**. Open **Preview** under **Telemetry**.
 - [ ] Confirm the practice recording reopens with samples and timestamps. Mark only the intended-machine software rehearsal as passed.
 - [ ] Press **Stop**, then **Reset**, before switching to the physical board.

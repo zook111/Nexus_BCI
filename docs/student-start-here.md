@@ -1,6 +1,6 @@
 # Start here: your EEG school project
 
-This is the starting page for a two-student team using a 2017 Intel MacBook on macOS Ventura. The app is **Dr K's EEG Lab**. Its repository is **Nexus_BCI**, and its desktop launcher is **Nexus Server**. These names refer to the same project.
+This is the starting page for a two-student team using a 2017 Intel MacBook on macOS Ventura. The app is **Nexus EEG Lab**. Its repository is **Nexus_BCI**, and its desktop launcher is **Nexus Server**. These names refer to the same project.
 
 Keep this page bookmarked. You can also open these four PDFs from **Help** inside the app, including when the installed app is running without internet access. Research websites and software downloads need internet access.
 

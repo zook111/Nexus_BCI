@@ -1,4 +1,4 @@
-# Set up Dr K's EEG Lab on your MacBook
+# Set up Nexus EEG Lab on your MacBook
 
 For a 2017 Intel MacBook running macOS Ventura. Work through this together: one person types, the other checks each step.
 

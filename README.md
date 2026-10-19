@@ -146,7 +146,7 @@ The real classifier uses OAS-shrinkage covariance with pyRiemann and scikit-lear
 
 Open **Help** in the app to find all four PDFs: Intel/Ventura setup, first experiment, hardware session checklist and first-week research. They are bundled for offline reading and open in a separate tab. Common troubleshooting steps are also available in Help. External research and manufacturer links require internet access.
 
-![Nexus EEG Lab Help section with student guide links](docs/images/eeg-lab-help.png)
+Help's update and troubleshooting notes use the Nexus Server window's **Start server**, **Open app** and **Stop server** buttons. The [student start page](docs/student-start-here.md) gives the same steps online.
 
 ## Connect the headset
 

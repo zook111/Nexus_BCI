@@ -89,7 +89,8 @@ Complete this check for **both** training and test before evaluating a classifie
 
 - [ ] Confirm the Lab session is saved, with its own ID, name, and participant code. Record included and excluded counts for each label and the reasons.
 - [ ] Use **Export labels** and **Download raw EEG CSV**. Match each export to its session ID. The annotation file contains task labels, sample timing, inclusion decisions, and notes; CSV alone is insufficient.
-- [ ] In **Console > Telemetry**, find the same saved session and click **Preview**. Confirm the app identifies replay, shows the expected channels and sample rate, and contains samples.
+- [ ] In **Experiment Lab > Review labels**, select the saved session. Check the displayed channel list, sample rate, mains frequency, and board against the session sheet. Repeat for the other recording.
+- [ ] In **Console > Telemetry**, find the same saved session and click **Preview**. Confirm the app identifies replay, shows the expected channels, and contains samples. The replay header does not display sample rate; use the saved metadata check above for that evidence.
 - [ ] Move through the beginning, middle, and end using the replay controls. Check that positions change and that the recording is not empty, constant, or unexpectedly cut short. Replay is saved data, not a new live-quality measurement.
 - [ ] Check the second session separately. Confirm the two CSVs contain different time ranges. Retain complete app recording metadata and experiment annotations with both CSVs.
 - [ ] After saving everything, press **Stop** and **Reset** in Console. Double-click **Nexus Server** again to stop the local services. Open it later and confirm each saved session still appears and opens. Record that persistence check separately from the immediate preview.

@@ -55,6 +55,7 @@ Experiment Lab readiness before trials: NOT RUN. Observed `3/3 clean windows`: _
 | Excluded trials with reason, before predictions | | |
 | Raw CSV, annotation JSON, app metadata paths | | |
 | Saved state confirmed | NOT RUN | NOT RUN |
+| Rate, board, mains, channels checked in Review labels | NOT RUN | NOT RUN |
 | Preview start/middle/end | NOT RUN | NOT RUN |
 | Reopened after launcher restart | NOT RUN | NOT RUN |
 

@@ -2,11 +2,12 @@
 
 Public repository: [zook111/Nexus_BCI](https://github.com/zook111/Nexus_BCI).
 
-## Student updater proposal, 19 October 2026
+## Offered student updates, 19 October 2026
 
-- Prepared `docs/superpowers/specs/2026-10-19-student-updates-design.md` for launcher-based update offers before starting the app. A fresh builder check found no material unanswered implementation questions beyond the user's pending offered-versus-automatic update choice.
-- The proposal preserves offline startup and the existing stop action, refuses active services or local source conflicts, pins the offered protected-main revision, and requires recoverable source/dependency backups and failure tests.
-- This is design work only. No updater code, dependency installation, service restart or software update has been performed. Implementation and review-ready PR remain pending the behaviour choice.
+- The user approved offered Update and restart behaviour. Native startup checks the protected public main branch, offers the pinned revision before starting services, and keeps offline/current-version startup usable. There is no HTTP software-install endpoint and no silent installation.
+- Git fast-forward/local-edit/ignored-file protections, an atomic transaction journal, recoverable dependency/code backups and ordinary failure rollback preserve recordings and local settings. Existing app processes/ports block installation; the launcher kernel lock covers update and startup. A stable copied worker uses base Python and macOS curl TLS trust.
+- The updater refreshes the correct installed shortcut/icon, including a custom app path. Student README/Help/setup instructions cover save/stop/open, Update and restart/Not now, offline behaviour and helper-led bootstrap for pre-feature installs.
+- Verification so far: 35 updater tests pass, using real temporary Git repos, real virtual-environment rollback and isolated update/recovery control fixtures. Native launcher/kernel-lock/updater-result tests and native installer/signing/quoted-path tests pass. Backend Ruff and 164 tests, frontend lint/110 tests/production build pass. The three-page setup PDF was rendered and its commands, six links and production asset checked. In-app Help and the PDF opening were verified at 1280×720 without app warnings/errors; the README screenshot is refreshed. Fresh branch review and required CI remain pending. No real checkout was updated by these tests, no participant data was used and independent Intel/Ventura/physical EEG validation remains outstanding.
 
 ## EEG Lab Dock icon, 19 October 2026
 

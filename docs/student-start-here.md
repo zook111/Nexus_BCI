@@ -50,6 +50,18 @@ Create a training recording and a separate, untouched test recording for each pa
 
 Before packing away, save recordings and labels, reopen the saved recordings, and follow the checklist's backup steps. Keep raw EEG, exports and completed participant sheets out of GitHub. A PDF downloaded from the repository is shareable; a participant's recording is private project data.
 
+## Keep the app and guides updated
+
+You do not need to type Git commands after setup:
+
+1. Finish and save your experiment and recording. Stop and Reset the board.
+2. Double-click **Nexus Server** to stop the services, then open it again. Closing the browser alone does not stop them.
+3. If an update is offered, choose **Update and restart**. Keep the Mac awake and online while it installs; the workspace opens when ready. Choose **Not now** to use the installed version.
+
+Offline checks still let the installed app open. No offer can mean the check was unavailable, rather than proving the app is current. Updates are not installed during a live session, and recordings/local settings stay in place. Local code edits or conflicting processes block an update rather than being discarded.
+
+If installation fails, follow the message. The updater attempts to reopen the previous version. If it asks for help, keep the app stopped and ask your helper; do not delete the project folder or recovery copies. An installation from before this feature needs one helper-led source update and launcher reinstall first. Fresh setup includes it.
+
 ## If you get stuck
 
 Try the matching step below. The installed app's **Help** tab also contains troubleshooting that works offline.

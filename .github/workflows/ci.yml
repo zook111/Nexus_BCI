@@ -39,6 +39,12 @@ jobs:
       - name: Test backend
         run: python -m pytest backend
 
+      - name: Lint source updater
+        run: python -m ruff check script/student_updates.py script/test_student_updates.py
+
+      - name: Test source updater
+        run: python -m pytest script/test_student_updates.py
+
   frontend:
     name: Frontend
     runs-on: ubuntu-24.04

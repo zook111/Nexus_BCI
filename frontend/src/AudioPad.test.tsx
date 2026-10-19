@@ -13,7 +13,10 @@ const props = { feedback, voice: 'tide' as const, onVoiceChange: vi.fn(), source
 
 class Param {
   value = 0
-  setTargetAtTime = vi.fn((value: number) => { this.value = value })
+  setTargetAtTime = vi.fn((value: number) => {
+    if (!Number.isFinite(value)) throw new TypeError('AudioParam requires a finite value')
+    this.value = value
+  })
 }
 class Node {
   gain = new Param()
@@ -66,8 +69,10 @@ it('starts muted and opens only at or above the 55% gate with a finite score', a
   expect(contexts[0].gains[0].gain.value).toBe(0)
   view.rerender(<CalmAudioPadControls {...props} feedback={{ ...feedback, confidence: .55 }} />)
   expect(contexts[0].gains[0].gain.value).toBeGreaterThan(0)
-  view.rerender(<CalmAudioPadControls {...props} feedback={{ ...feedback, score: NaN }} />)
-  expect(contexts[0].gains[0].gain.value).toBe(0)
+  for (const score of [NaN, Infinity, -Infinity]) {
+    view.rerender(<CalmAudioPadControls {...props} feedback={{ ...feedback, score }} />)
+    expect(contexts[0].gains[0].gain.value).toBe(0)
+  }
 })
 
 it('mutes noisy input and an explicit user mute disposes the engine', async () => {

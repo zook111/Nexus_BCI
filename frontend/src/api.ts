@@ -74,6 +74,10 @@ export type StreamSnapshot = {
   status: BoardStatus
   board?: BoardKind | null
   board_id?: number | null
+  // Optional while talking to an older backend without shared device metadata.
+  serial_port?: string | null
+  eeg_channels?: number[]
+  eeg_names?: string[]
   sample_count: number
   sampling_rate?: number | null
   timestamps: number[]

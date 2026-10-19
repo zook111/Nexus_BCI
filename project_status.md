@@ -46,6 +46,18 @@ Clean Python 3.12 / Node 24 setup, backend Ruff and 161 tests, frontend lint and
 - BrainFlow 5.23.0 BoardController includes x86_64 with a macOS 10.13 target; the locked Rolldown 1.2.12 Intel binding targets macOS 10.12.
 - README gives a Python 3.13 standard installer route, Intel Node selection and explicit interpreter command. This is compatibility evidence, not an Intel/Ventura runtime or headset test.
 
+## Shared device state across browser windows (11 October 2026)
+
+- Stream frames now include the same device status, serial port and EEG channel metadata as `/api/board`. A second window follows Connect, Start, Stop, Reset and native-session recovery without reloading, and idle frames preserve the user's next board selection.
+- Released prepared sessions are reconciled before publishing a frame. A failed sample read returns a paused frame with current metadata. Stream recovery clears its own error message without clearing unrelated operation errors.
+- CodeRabbit's committed review raised one minor port-selection issue. Successful prepared/streaming frames now synchronize selections, while error frames preserve the operator's selected port for recovery; a regression assertion reproduces and verifies that fix.
+- Python 3.12 backend Ruff and 164 tests pass; Node 24 frontend lint, 88 tests and production build pass. Regression tests cover remote device transitions, optional legacy frames, malformed metadata and native loss before/after streaming.
+- Two Chrome tabs at an isolated loopback test URL followed simulated Connect → Start → Stop → Reset without refreshing the observer. Device controls, DSP and quality updated together. No app console warnings/errors were observed; one unrelated Chrome extension emitted a search-engine error. Screenshots and test data remain outside the tracked source.
+- No additional physical-headset test was performed. Stable electrode contact and a real eyes-open/closed recording still need a later hardware session. The hardware demo launcher was stopped for the night; the review does not certify EEG quality or classifier accuracy.
+- PR #8 follow-up review: a shared transition into streaming now clears saved replay and its analysis, matching the local Start action. Repeated streaming frames preserve an intentionally opened replay. The regression test covers both paths.
+- An observer now lists a shared session's active serial port even if the dongle appeared after that tab loaded. It is labelled as an active backend port without inventing a hardware recommendation; no extra connect action is issued.
+- Session-only port options are removed on reset, error or port changes. Connect requires a currently listed selected port, so a removed fallback cannot silently remain connectable. Discovered ports and the operator's idle board choice remain intact.
+
 ## Known limits and next steps
 
 - A two-page Intel/Ventura setup PDF and copyable text guide are available in `docs/`. Both pages were rendered and reviewed; six links and the installation command text were checked. The practice flow was followed in a browser: Record, Capture setup, Save and Preview, producing a synthetic session with 11,551 samples and one setup snapshot.

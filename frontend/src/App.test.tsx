@@ -17,6 +17,8 @@ const apiMock = vi.hoisted(() => ({
   dspSummary: vi.fn(),
   signalQuality: vi.fn(),
   calmFeatures: vi.fn(),
+  recordingPreview: vi.fn(),
+  recordingAnalysis: vi.fn(),
 }))
 
 vi.mock('./api', async (importOriginal) => {
@@ -206,4 +208,117 @@ it('opens student Help without a headset and returns to Console', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Console' }))
   expect(screen.queryByRole('region', { name: 'Help and student guides' })).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Console' })).toHaveAttribute('aria-pressed', 'true')
+})
+
+it('follows another window through connect, start, stop and reset without reloading', async () => {
+  vi.stubEnv('VITE_OPENBCI_AUTOCONNECT_SERIAL', '')
+  render(<App />)
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Connect' })).toBeEnabled())
+  const controls = within(screen.getByRole('button', { name: 'Start' }).parentElement!)
+  async function broadcast(board: BoardState) {
+    await act(async () => {
+      sockets.at(-1)?.onmessage?.(new MessageEvent('message', {
+        data: JSON.stringify({ ...board, sample_count: 0, timestamps: [], channels: [] }),
+      }))
+    })
+  }
+  await broadcast(preparedBoard)
+  expect(screen.getByRole('combobox', { name: 'Board' })).toHaveValue('cyton')
+  expect(screen.getByRole('combobox', { name: 'Serial port' })).toHaveValue(trustedPort.device)
+  expect(screen.getByRole('button', { name: 'Connect' })).toBeDisabled()
+  expect(controls.getByRole('button', { name: 'Start' })).toBeEnabled()
+  await broadcast({ ...preparedBoard, status: 'streaming' })
+  expect(controls.getByRole('button', { name: 'Start' })).toBeDisabled()
+  expect(controls.getByRole('button', { name: 'Stop' })).toBeEnabled()
+  expect(apiMock.signalQuality).toHaveBeenCalled()
+  expect(apiMock.dspSummary).toHaveBeenCalled()
+  await broadcast(preparedBoard)
+  expect(controls.getByRole('button', { name: 'Start' })).toBeEnabled()
+  expect(controls.getByRole('button', { name: 'Stop' })).toBeDisabled()
+  const failure = 'Signal paused: native session lost. Reset and connect again.'
+  await broadcast({ ...preparedBoard, status: 'error', serial_port: null, message: failure })
+  expect(screen.getByText(failure)).toBeInTheDocument()
+  expect(screen.getByRole('combobox', { name: 'Serial port' })).toHaveValue(trustedPort.device)
+  expect(controls.getByRole('button', { name: 'Start' })).toBeDisabled()
+  await broadcast(preparedBoard)
+  expect(screen.queryByText(failure)).not.toBeInTheDocument()
+  expect(controls.getByRole('button', { name: 'Start' })).toBeEnabled()
+  await broadcast(idleBoard)
+  expect(screen.getByRole('button', { name: 'Connect' })).toBeEnabled()
+  expect(controls.getByRole('button', { name: 'Reset' })).toBeDisabled()
+  // Passive observers must never claim or restart the serial session themselves.
+  expect(apiMock.connect).not.toHaveBeenCalled()
+  expect(apiMock.start).not.toHaveBeenCalled()
+})
+
+it('keeps a manually selected board while receiving idle frames', async () => {
+  vi.stubEnv('VITE_OPENBCI_AUTOCONNECT_SERIAL', '')
+  render(<App />)
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Connect' })).toBeEnabled())
+  fireEvent.change(screen.getByRole('combobox', { name: 'Board' }), { target: { value: 'cyton_daisy' } })
+  await act(async () => {
+    sockets.at(-1)?.onmessage?.(new MessageEvent('message', {
+      data: JSON.stringify({ ...idleBoard, sample_count: 0, timestamps: [], channels: [] }),
+    }))
+  })
+  expect(screen.getByRole('combobox', { name: 'Board' })).toHaveValue('cyton_daisy')
+})
+
+it('leaves saved replay for a shared stream start but permits replay during an existing stream', async () => {
+  vi.stubEnv('VITE_OPENBCI_AUTOCONNECT_SERIAL', '')
+  apiMock.board.mockResolvedValue(preparedBoard)
+  const saved = { ...emptyRecording, session_id: 'saved-replay', label: 'Saved practice', sampling_rate: 250, sample_count: 2 }
+  apiMock.recordings.mockResolvedValue([saved])
+  apiMock.recordingPreview.mockResolvedValue({ recording: saved, offset: 0, total_rows: 2, row_count: 2, headers: ['timestamp', 'Fp1'], rows: [[1, 2], [2, 3]], timestamps: [1, 2], channels: [{ index: 1, label: 'Fp1', samples: [2, 3] }] })
+  apiMock.recordingAnalysis.mockResolvedValue({ recording: saved, offset: 0, total_rows: 2, sample_count: 2, sampling_rate: 250, bandpass_low_hz: 1, bandpass_high_hz: 45, channels: [] })
+  render(<App />)
+  await screen.findByRole('button', { name: 'Preview' })
+  async function broadcast(status: 'prepared' | 'streaming') {
+    await act(async () => {
+      sockets.at(-1)?.onmessage?.(new MessageEvent('message', {
+        data: JSON.stringify({ ...preparedBoard, status, sample_count: 0, timestamps: [], channels: [] }),
+      }))
+    })
+  }
+  await broadcast('prepared')
+  fireEvent.click(screen.getByRole('button', { name: 'Preview' }))
+  await screen.findByText('Replay window loaded')
+  await broadcast('streaming')
+  expect(screen.queryByText('Replay window loaded')).not.toBeInTheDocument()
+  expect(apiMock.signalQuality).toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('button', { name: 'Preview' }))
+  await screen.findByText('Replay window loaded')
+  await broadcast('streaming')
+  expect(screen.getByText('Replay window loaded')).toBeInTheDocument()
+})
+
+it('shows an active serial port discovered by another window after this tab loaded', async () => {
+  vi.stubEnv('VITE_OPENBCI_AUTOCONNECT_SERIAL', '')
+  apiMock.ports.mockResolvedValue([])
+  render(<App />)
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Connect' })).toBeEnabled())
+  await act(async () => {
+    sockets.at(-1)?.onmessage?.(new MessageEvent('message', {
+      data: JSON.stringify({ ...preparedBoard, sample_count: 0, timestamps: [], channels: [] }),
+    }))
+  })
+  expect(screen.getByRole('combobox', { name: 'Serial port' })).toHaveValue(trustedPort.device)
+  expect(screen.getByText('Active backend serial port')).toBeInTheDocument()
+  expect(apiMock.connect).not.toHaveBeenCalled()
+  const otherPort = '/dev/cu.usbserial-EXAMPLE002'
+  await act(async () => {
+    sockets.at(-1)?.onmessage?.(new MessageEvent('message', {
+      data: JSON.stringify({ ...preparedBoard, serial_port: otherPort, sample_count: 0, timestamps: [], channels: [] }),
+    }))
+  })
+  expect(screen.queryByRole('option', { name: new RegExp(trustedPort.device) })).not.toBeInTheDocument()
+  expect(screen.getByRole('combobox', { name: 'Serial port' })).toHaveValue(otherPort)
+  await act(async () => {
+    sockets.at(-1)?.onmessage?.(new MessageEvent('message', {
+      data: JSON.stringify({ ...idleBoard, sample_count: 0, timestamps: [], channels: [] }),
+    }))
+  })
+  expect(screen.queryByRole('option', { name: new RegExp(otherPort) })).not.toBeInTheDocument()
+  expect(screen.queryByText('Active backend serial port')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Connect' })).toBeDisabled()
 })

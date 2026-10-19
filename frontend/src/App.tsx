@@ -53,7 +53,7 @@ import {
 import { DoctorDemo } from './doctorDemo/DoctorDemo'
 import { ExperimentLab } from './experimentLab/ExperimentLab'
 import { StudentHelp } from './StudentHelp'
-import { connectLiveStream } from './liveStream'
+import { connectLiveStream, sharedBoardState } from './liveStream'
 import type {
   BoardKind,
   BoardState,
@@ -2897,7 +2897,7 @@ async function loadBoardContext() {
 
 function App() {
   const [health, setHealth] = useState<HealthResponse | null>(null)
-  const [ports, setPorts] = useState<SerialPortInfo[]>([])
+  const [ports, setPorts] = useState<Array<SerialPortInfo & { sharedSessionOnly?: boolean }>>([])
   const [board, setBoard] = useState<BoardState>(emptyBoard)
   const [stream, setStream] = useState<StreamSnapshot>(emptyStream)
   const [recording, setRecording] = useState<RecordingState>(emptyRecording)
@@ -2941,6 +2941,7 @@ function App() {
   const [calibrationMarkers, setCalibrationMarkers] = useState<CalibrationMarker[]>([])
   const [error, setError] = useState<string | null>(null)
   const liveConnectionRef = useRef<ReturnType<typeof connectLiveStream> | null>(null)
+  const liveErrorRef = useRef<string | null>(null)
   const dspRef = useRef<DspSummary | null>(null)
   const signalQualityRef = useRef<SignalQuality | null>(null)
   const streamRef = useRef<StreamSnapshot>(emptyStream)
@@ -3243,21 +3244,48 @@ function App() {
   }, [])
 
   useEffect(() => {
+    let previousStatus: StreamSnapshot['status'] | null = null
     const connection = connectLiveStream(STREAM_WS_URL, {
       snapshot(snapshot) {
+        const started = snapshot.status === 'streaming' && previousStatus !== 'streaming'
+        previousStatus = snapshot.status
+        if (started) {
+          setReplay(null)
+          setReplayAnalysis(null)
+        }
         setStream(snapshot)
+        setBoard(current => sharedBoardState(current, snapshot))
+        const activePort = snapshot.status === 'prepared' || snapshot.status === 'streaming'
+          ? snapshot.serial_port : null
+        setPorts(current => {
+          const next = current.filter(port => !port.sharedSessionOnly || port.device === activePort)
+          if (activePort && !next.some(port => port.device === activePort)) {
+            return [...next, { device: activePort, transport: 'unknown', recommended: false,
+              rank: 0, message: 'Active backend serial port', sharedSessionOnly: true }]
+          }
+          return next.length === current.length ? current : next
+        })
+        if (snapshot.eeg_channels && snapshot.eeg_names && snapshot.board
+          && (snapshot.status === 'prepared' || snapshot.status === 'streaming')) {
+          setSelectedBoard(snapshot.board)
+          setSelectedPort(snapshot.serial_port ?? '')
+        }
         if (snapshot.status === 'error') {
           setBoard(current => current.status === 'streaming' || current.status === 'prepared'
             ? { ...current, status: 'error', message: snapshot.message }
             : current)
-          setError(snapshot.message || 'Signal paused. Reset and connect again.')
+          liveErrorRef.current = snapshot.message || 'Signal paused. Reset and connect again.'
+          setError(liveErrorRef.current)
         } else {
-          setError(current => current?.startsWith('Live stream paused.') ? null : current)
+          const previousLiveError = liveErrorRef.current
+          liveErrorRef.current = null
+          setError(current => current === previousLiveError ? null : current)
           if (snapshot.status === 'idle') setBoard(current => current.status === 'idle' ? current : emptyBoard)
         }
       },
       unavailable(message) {
         setStream(current => ({ ...current, status: 'error', sample_count: 0, timestamps: [], channels: [] }))
+        liveErrorRef.current = message
         setError(message)
       },
     })
@@ -3959,7 +3987,7 @@ function App() {
                   }),
                 )
               }
-              disabled={busy || deviceSelectionLocked || (canUseSerialPort && !selectedPort)}
+              disabled={busy || deviceSelectionLocked || (canUseSerialPort && !selectedPortInfo)}
             >
               <PlugZap size={16} />
               Connect

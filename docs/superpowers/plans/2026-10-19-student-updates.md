@@ -1,6 +1,6 @@
 # Student updates implementation plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Offer safe student updates through the Mac Desktop launcher without Terminal or Git commands.
 
@@ -32,11 +32,11 @@
 
 **Interfaces:** `Updater(root: Path, state: Path)` validates the repository; `install(target: str, prepare: Callable, start: Callable, stop: Callable)` owns backups/journal/rollback; `recover(start: Callable, stop: Callable)` reconciles an unfinished journal. CLI uses only the fixed public source; tests use isolated real Git remotes by patching the fixed remote constant.
 
-- [ ] Write tests using temporary repositories for clean fast-forward, local edits, divergence, wrong remote, ignored/untracked collision, sentinel data preservation, ordinary rollback and interruption after each directory move.
-- [ ] Run `pytest script/test_student_updates.py`; expect missing updater implementation to fail the behavioural assertions.
-- [ ] Implement the validation and transaction core. Atomic journal replacement records original/target commits and dependency existence; derive backup locations from a validated transaction ID. Never hard-reset/clean/stash.
-- [ ] Run the tests and Ruff on the new Python files; expect passing results.
-- [ ] Commit the tested core.
+- [x] Write tests using temporary repositories for clean fast-forward, local edits, divergence, wrong remote, ignored/untracked collision, sentinel data preservation, ordinary rollback and interruption after each directory move.
+- [x] Run `pytest script/test_student_updates.py`; expect missing updater implementation to fail the behavioural assertions.
+- [x] Implement the validation and transaction core. Atomic journal replacement records original/target commits and dependency existence; derive backup locations from a validated transaction ID. Never hard-reset/clean/stash.
+- [x] Run the tests and Ruff on the new Python files; expect passing results.
+- [x] Commit the tested core.
 
 ### Task 2: Native offer and launcher integration
 
@@ -44,10 +44,10 @@
 
 **Interfaces:** GUI launcher sets `NEXUS_CHECK_UPDATES=1`; locked startup calls the updater using the existing environment's base Python. Exit 0 continues normal startup, exit 20 means the updater already started and verified the app, any other result stops startup. Worker start/stop callbacks invoke existing locked actions with update checks disabled.
 
-- [ ] Add failing tests for offline/declined offers, latest-commit validation, GUI argument escaping, base-interpreter/Node discovery, live PID/occupied-port refusal and child-worker exit handling.
-- [ ] Implement the short-timeout update check, native offer, stable copied worker and subprocess log routing. Journal recovery precedes any offer. Validate Python/Node and disk capacity before mutation; preserve configured ports and environment.
-- [ ] Integrate the offer only in GUI startup, never the running-app stop path. Keep startup and update under the same kernel lock. Escape launcher paths in AppleScript.
-- [ ] Run Python tests and native launcher/install tests, including paths with spaces/quotes; expect passing results. Commit.
+- [x] Add failing tests for offline/declined offers, latest-commit validation, GUI argument escaping, base-interpreter/Node discovery, live PID/occupied-port refusal and child-worker exit handling.
+- [x] Implement the short-timeout update check, native offer, stable copied worker and subprocess log routing. Journal recovery precedes any offer. Validate Python/Node and disk capacity before mutation; preserve configured ports and environment.
+- [x] Integrate the offer only in GUI startup, never the running-app stop path. Keep startup and update under the same kernel lock. Escape launcher paths in AppleScript.
+- [x] Run Python tests and native launcher/install tests, including paths with spaces/quotes; expect passing results. Commit.
 
 ### Task 3: Student instructions and release verification
 

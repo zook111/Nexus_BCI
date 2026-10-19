@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -251,3 +252,325 @@ def test_missing_backup_is_not_mistaken_for_restored_dependencies(project):
         )
     assert u.journal.exists()
     assert_private(root)
+
+
+def test_offline_offer_keeps_existing_app_usable(project, monkeypatch):
+    m, u, root, _, old, _ = project
+    monkeypatch.setenv("NEXUS_CHECK_UPDATES", "1")
+    monkeypatch.setattr(
+        m, "latest_commit", lambda: (_ for _ in ()).throw(OSError("offline"))
+    )
+    assert (
+        m.startup(
+            u,
+            root / "script/build_and_run.sh",
+            offer=lambda *_: pytest.fail("no offer offline"),
+        )
+        == 0
+    )
+    assert git(root, "rev-parse", "HEAD") == old
+    assert_private(root)
+
+
+def test_declining_offer_does_not_install(project, monkeypatch):
+    m, u, root, _, old, target = project
+    monkeypatch.setenv("NEXUS_CHECK_UPDATES", "1")
+    monkeypatch.setattr(m, "latest_commit", lambda: target)
+    monkeypatch.setattr(m, "ensure_stopped", lambda *_: None)
+    offers = []
+    assert (
+        m.startup(u, root / "launcher", offer=lambda *a: offers.append(a) or False) == 0
+    )
+    assert offers == [(old, target)]
+    assert git(root, "rev-parse", "HEAD") == old
+    assert_private(root)
+
+
+def test_non_gui_start_does_not_check_network(project, monkeypatch):
+    m, u, root, _, _, _ = project
+    monkeypatch.delenv("NEXUS_CHECK_UPDATES", raising=False)
+    monkeypatch.setattr(
+        m, "latest_commit", lambda: pytest.fail("CLI start should not check")
+    )
+    assert m.startup(u, root / "launcher") == 0
+
+
+def test_offer_runs_stable_worker_and_forwards_started_exit(project, monkeypatch):
+    m, u, root, _, _, target = project
+    monkeypatch.setenv("NEXUS_CHECK_UPDATES", "1")
+    monkeypatch.setattr(m, "latest_commit", lambda: target)
+    monkeypatch.setattr(m, "ensure_stopped", lambda *_: None)
+    calls = []
+    monkeypatch.setattr(m, "run_worker", lambda *a: calls.append(a) or 20)
+    assert m.startup(u, root / "launcher", offer=lambda *_: True) == 20
+    assert calls[0][2] == target
+
+
+def test_interrupted_update_recovery_precedes_network_even_in_cli(project, monkeypatch):
+    m, u, root, _, _, _ = project
+    u.state.mkdir(parents=True)
+    u.journal.write_text("{}")
+    monkeypatch.delenv("NEXUS_CHECK_UPDATES", raising=False)
+    monkeypatch.setattr(m, "ensure_stopped", lambda *_: None)
+    calls = []
+    monkeypatch.setattr(m, "run_worker", lambda *a: calls.append(a) or 20)
+    monkeypatch.setattr(
+        m, "latest_commit", lambda: pytest.fail("recover before network")
+    )
+    assert m.startup(u, root / "launcher") == 20
+    assert calls[0][2] == "recover"
+
+
+def test_live_pid_blocks_update_without_killing_it(project):
+    import os
+
+    m, _, root, _, _, _ = project
+    state = root.parent / "launcher-state"
+    state.mkdir()
+    (state / "backend.pid").write_text(str(os.getpid()))
+    with pytest.raises(m.UpdateError):
+        m.ensure_stopped(root, state)
+    os.kill(os.getpid(), 0)
+
+
+def test_occupied_port_blocks_update(project, monkeypatch):
+    import socket
+
+    m, _, root, _, _, _ = project
+    with socket.socket() as server:
+        server.bind(("127.0.0.1", 0))
+        server.listen()
+        monkeypatch.setenv("MINDMELD_BACKEND_PORT", str(server.getsockname()[1]))
+        with pytest.raises(m.UpdateError):
+            m.ensure_stopped(root, root.parent / "launcher-state")
+
+
+@pytest.mark.parametrize("value", ["bad", "a" * 39, "a" * 41, "../main"])
+def test_network_commit_is_validated(project, monkeypatch, value):
+    from types import SimpleNamespace
+
+    m, *_ = project
+    monkeypatch.setattr(
+        m.subprocess,
+        "run",
+        lambda *_a, **_kw: SimpleNamespace(
+            stdout=json.dumps({"object": {"sha": value}})
+        ),
+    )
+    with pytest.raises(m.UpdateError):
+        m.latest_commit()
+
+
+def test_native_offer_keeps_version_text_out_of_script_code(project, monkeypatch):
+    from types import SimpleNamespace
+
+    m, _, _, _, old, target = project
+    calls = []
+    monkeypatch.setattr(
+        m.subprocess,
+        "run",
+        lambda args, **kw: (
+            calls.append(args)
+            or SimpleNamespace(returncode=0, stdout="Update and restart")
+        ),
+    )
+    assert m.offer_version(old, target)
+    assert old[:8] in calls[0][-1] and target[:8] in calls[0][-1]
+    assert (
+        old[:8] not in calls[0][2]
+    )  # message is argv, not executable AppleScript source.
+
+
+def test_latest_commit_uses_small_branch_ref_payload(project, monkeypatch):
+    from types import SimpleNamespace
+
+    m, _, _, _, _, target = project
+    calls = []
+    monkeypatch.setattr(
+        m.subprocess,
+        "run",
+        lambda args, **_kw: (
+            calls.append(args)
+            or SimpleNamespace(stdout=json.dumps({"object": {"sha": target}}))
+        ),
+    )
+    assert m.latest_commit() == target
+    assert calls[0][-1].endswith("/git/ref/heads/main")
+    assert calls[0][:2] == ["/usr/bin/curl", "-q"]
+
+
+def test_bookkeeping_failure_after_start_rolls_back(project, monkeypatch):
+    m, u, root, _, old, target = project
+    real_write = u.write_json
+
+    def write(path, data):
+        if path == u.previous:
+            raise OSError("disk full")
+        return real_write(path, data)
+
+    monkeypatch.setattr(u, "write_json", write)
+    starts = []
+    with pytest.raises(m.RestoredUpdate):
+        u.install(
+            target,
+            prepare=lambda: prepare_new(root),
+            start=lambda: starts.append(git(root, "rev-parse", "HEAD")),
+            stop=lambda: None,
+        )
+    assert starts[-1] == old
+    assert (root / ".venv/sentinel").read_text() == "old"
+    assert_private(root)
+
+
+def test_real_virtualenv_entrypoint_works_after_rollback(project):
+    m, u, root, _, _, target = project
+    environment = root / ".venv"
+    subprocess.run(
+        [sys._base_executable, "-m", "venv", "--without-pip", str(environment)],
+        check=True,
+    )
+    entry = environment / "bin/student-tool"
+    entry.write_text(
+        f"#!/bin/sh\nexec {shlex.quote(str(environment / 'bin/python'))} -c 'import sys; print(sys.prefix)' \"$@\"\n"
+    )
+    entry.chmod(0o755)
+
+    def prep():
+        subprocess.run(
+            [sys._base_executable, "-m", "venv", "--without-pip", str(environment)],
+            check=True,
+        )
+        raise RuntimeError("network interrupted")
+
+    with pytest.raises(m.RestoredUpdate):
+        u.install(target, prepare=prep, start=lambda: None, stop=lambda: None)
+    assert subprocess.check_output([str(entry)], text=True).strip() == str(environment)
+    assert_private(root)
+
+
+@pytest.mark.parametrize("fail_setup", [False, True])
+def test_worker_control_boundary_updates_or_restores_real_environment(
+    project, monkeypatch, tmp_path, fail_setup
+):
+    m, _, root, other, _, _ = project
+    scripts = other / "script"
+    scripts.mkdir()
+    helper = scripts / "fixture-launcher.sh"
+    helper.write_text("""#!/bin/bash
+set -eu
+[ "$NEXUS_UPDATE_WORKER" = 1 ]
+[ "$MINDMELD_OPEN_BROWSER" = 0 ]
+[ "$MINDMELD_BACKEND_PORT" = 18189 ]
+[ "$MINDMELD_FRONTEND_PORT" = 15189 ]
+case "$1" in
+ --locked-start_services) git rev-parse HEAD > "$FIXTURE_START_MARK" ;;
+ --verify) [ "$(cat "$FIXTURE_START_MARK")" = "$(git rev-parse HEAD)" ] ;;
+ --locked-stop_services) : ;;
+ *) exit 4 ;;
+esac
+""")
+    refresh = scripts / "install_desktop_launcher.sh"
+    refresh.write_text(
+        '#!/bin/bash\nset -eu\nprintf refreshed > "$MINDMELD_DESKTOP_APP/refreshed"\n'
+    )
+    setup = scripts / "setup.sh"
+    setup.write_text("""#!/bin/bash
+set -eu
+"$NEXUS_PYTHON" -m venv --without-pip .venv
+mkdir -p frontend/node_modules
+printf new > frontend/node_modules/sentinel
+""")
+    (other / "app.txt").write_text("old")
+    git(other, "add", ".")
+    git(other, "commit", "-m", "old fixture helpers")
+    git(other, "push")
+    git(root, "fetch", "origin")
+    git(root, "merge", "--ff-only", git(other, "rev-parse", "HEAD"))
+    old = git(root, "rev-parse", "HEAD")
+    (other / "app.txt").write_text("new")
+    if fail_setup:
+        setup.write_text("#!/bin/bash\nexit 7\n")
+    git(other, "commit", "-am", "offered fixture update")
+    git(other, "push")
+    target = git(other, "rev-parse", "HEAD")
+    tools = tmp_path / "tools"
+    tools.mkdir()
+    for tool in ["node", "npm"]:
+        path = tools / tool
+        path.write_text("#!/bin/bash\nexit 0\n")
+        path.chmod(0o755)
+    monkeypatch.setenv("PATH", str(tools) + ":" + __import__("os").environ["PATH"])
+    monkeypatch.setenv("MINDMELD_LAUNCHER_STATE_DIR", str(tmp_path / "launcher-state"))
+    monkeypatch.setenv("MINDMELD_BACKEND_PORT", "18189")
+    monkeypatch.setenv("MINDMELD_FRONTEND_PORT", "15189")
+    desktop_app = tmp_path / "Custom Lab.app"
+    desktop_app.mkdir()
+    monkeypatch.setenv("MINDMELD_DESKTOP_APP", str(desktop_app) + "/")
+    monkeypatch.setenv("FIXTURE_START_MARK", str(tmp_path / "last-start"))
+    monkeypatch.setenv("PRIVATE_TEST_TOKEN", "never-log-this-value")
+    monkeypatch.setattr(m, "show_message", lambda *_a, **_kw: None)
+    u = m.Updater(root, tmp_path / "launcher-state")
+    assert m.worker_run(u, root / "script/fixture-launcher.sh", target) == 20
+    expected = old if fail_setup else target
+    assert git(root, "rev-parse", "HEAD") == expected
+    assert (tmp_path / "last-start").read_text().strip() == expected
+    assert (desktop_app / "refreshed").read_text() == "refreshed"
+    assert not u.journal.exists()
+    assert "never-log-this-value" not in (u.state / "update.log").read_text()
+    assert_private(root)
+
+
+@pytest.mark.skipif(
+    sys.platform != "darwin", reason="macOS launcher kernel-lock integration"
+)
+def test_concurrent_launch_is_blocked_while_updater_is_waiting(tmp_path):
+    import os
+    import signal
+    import time
+
+    root = tmp_path / "student quoted project"
+    scripts = root / "script"
+    scripts.mkdir(parents=True)
+    launcher = scripts / "build_and_run.sh"
+    launcher.write_bytes(SOURCE.with_name("build_and_run.sh").read_bytes())
+    launcher.chmod(0o755)
+    marker = tmp_path / "worker-called"
+    (scripts / "student_updates.py").write_text("""import os,time
+from pathlib import Path
+with Path(os.environ['UPDATE_TEST_MARK']).open('a') as f: f.write('called\\n')
+time.sleep(2)
+raise SystemExit(20)
+""")
+    env = {
+        **os.environ,
+        "NEXUS_PYTHON": sys._base_executable,
+        "MINDMELD_LAUNCHER_STATE_DIR": str(tmp_path / "state"),
+        "MINDMELD_OPEN_BROWSER": "0",
+        "UPDATE_TEST_MARK": str(marker),
+    }
+    first = subprocess.Popen(
+        ["/bin/bash", str(launcher), "--start"],
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        start_new_session=True,
+    )
+    try:
+        deadline = time.monotonic() + 8
+        while not marker.exists() and time.monotonic() < deadline:
+            time.sleep(0.03)
+        assert marker.exists()
+        second = subprocess.run(
+            ["/bin/bash", str(launcher), "--start"],
+            env=env,
+            capture_output=True,
+            timeout=5,
+            check=False,
+        )
+        assert second.returncode != 0
+        assert first.wait(timeout=8) == 0
+        assert marker.read_text() == "called\n"
+    finally:
+        if first.poll() is None:
+            os.killpg(first.pid, signal.SIGTERM)
+        first.communicate(timeout=5)

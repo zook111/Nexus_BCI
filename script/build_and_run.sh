@@ -226,7 +226,51 @@ open_site() {
   fi
 }
 
+find_update_python() {
+  local candidate
+  local resolved
+  local base
+  for candidate in "${NEXUS_PYTHON:-}" "$ROOT_DIR/.venv/bin/python" \
+    /usr/local/bin/python3.13 /usr/local/bin/python3.12 \
+    /opt/homebrew/bin/python3.13 /opt/homebrew/bin/python3.12 python3; do
+    [ -n "$candidate" ] || continue
+    resolved="$(command -v "$candidate" 2>/dev/null || true)"
+    [ -n "$resolved" ] && [ -x "$resolved" ] || continue
+    base="$("$resolved" -c 'import sys; sys.exit(1) if sys.version_info < (3, 12) else print(sys._base_executable)' 2>/dev/null)" || continue
+    if [ -x "$base" ]; then printf '%s\n' "$base"; return 0; fi
+  done
+  return 1
+}
+
+prepare_student_update() {
+  [ "${NEXUS_UPDATE_WORKER:-0}" != 1 ] || return 0
+  [ -f "$SCRIPT_DIR/student_updates.py" ] || return 0
+  local python
+  local node
+  python="$(find_update_python)" || {
+    echo "A compatible Python is needed to check update recovery. Ask your helper." >&2
+    return 1
+  }
+  node="$(find_node 2>/dev/null || true)"
+  if [ -n "$node" ]; then
+    PATH="$(dirname "$node"):$PATH" "$python" "$SCRIPT_DIR/student_updates.py" \
+      --root "$ROOT_DIR" --launcher "$LAUNCHER_SCRIPT_FOR_UPDATE"
+  else
+    "$python" "$SCRIPT_DIR/student_updates.py" --root "$ROOT_DIR" --launcher "$LAUNCHER_SCRIPT_FOR_UPDATE"
+  fi
+}
+
 start_services() {
+  local update_status
+  LAUNCHER_SCRIPT_FOR_UPDATE="$SCRIPT_DIR/build_and_run.sh"
+  prepare_student_update
+  update_status=$?
+  if [ "$update_status" -eq 20 ]; then
+    open_site
+    echo "Nexus is ready at $FRONTEND_URL"
+    return 0
+  fi
+  [ "$update_status" -eq 0 ] || return "$update_status"
   local python="$ROOT_DIR/.venv/bin/python"
   local vite="$ROOT_DIR/frontend/node_modules/vite/bin/vite.js"
   local node
@@ -332,7 +376,6 @@ toggle_services() {
   if service_is_running "$BACKEND_PID_FILE" backend || service_is_running "$FRONTEND_PID_FILE" frontend; then
     stop_services
   else
-    rm -f "$BACKEND_PID_FILE" "$FRONTEND_PID_FILE"
     start_services
   fi
 }

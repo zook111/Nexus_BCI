@@ -443,7 +443,7 @@ it('preserves a completed prepared-board baseline on the first snapshot', async 
   expect(screen.getByText('complete', { exact: true })).toBeInTheDocument()
 })
 
-it('interrupts calibration on replacement and exports retained markers with their original connection', async () => {
+it.each(['replacement', 'manual stop', 'stream stop'])('exports retained calibration markers as interrupted after %s', async reason => {
   vi.useFakeTimers()
   vi.stubEnv('VITE_OPENBCI_AUTOCONNECT_SERIAL', '')
   apiMock.board.mockResolvedValue({ ...preparedBoard, status: 'streaming', connection_id: 'original-connection' })
@@ -471,10 +471,14 @@ it('interrupts calibration on replacement and exports retained markers with thei
   await act(async () => { fireEvent.click(cues.getByRole('button', { name: 'Run cues' })) })
   expect(cues.getByRole('button', { name: 'Stop' })).toBeEnabled()
   await act(async () => {
-    sockets.at(-1)?.onmessage?.(new MessageEvent('message', { data: JSON.stringify({
-      ...preparedBoard, status: 'streaming', connection_id: 'new-connection', sample_count: 0, timestamps: [], channels: [],
+    if (reason === 'manual stop') fireEvent.click(cues.getByRole('button', { name: 'Stop' }))
+    else sockets.at(-1)?.onmessage?.(new MessageEvent('message', { data: JSON.stringify({
+      ...preparedBoard, status: reason === 'replacement' ? 'streaming' : 'prepared',
+      connection_id: reason === 'replacement' ? 'new-connection' : 'original-connection',
+      sample_count: 0, timestamps: [], channels: [],
     }) }))
   })
+  await act(async () => { vi.advanceTimersByTime(300) })
   expect(cues.getByRole('button', { name: 'Stop' })).toBeDisabled()
   await act(async () => { vi.advanceTimersByTime(12000) })
   fireEvent.click(cues.getByRole('button', { name: 'Export markers' }))

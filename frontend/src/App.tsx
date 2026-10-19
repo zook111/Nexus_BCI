@@ -3150,6 +3150,7 @@ function App() {
   )
 
   const stopCalibrationProtocol = useCallback(() => {
+    if (calibrationRunningRef.current && calibrationSourceRef.current) calibrationSourceRef.current.interrupted = true
     calibrationRunningRef.current = false
     setCalibrationStatus((current) => (current === 'running' ? 'complete' : current))
     setCalibrationStepStartedAt(null)
@@ -3266,7 +3267,10 @@ function App() {
               setError(failureMessage)
               try {
                 const failedBoard = await api.board()
-                if (!cancelled) setBoard(failedBoard)
+                if (!cancelled) {
+                  loadedBoardRef.current = failedBoard
+                  setBoard(failedBoard)
+                }
               } catch {
                 if (!cancelled) {
                   setBoard({
@@ -3412,6 +3416,7 @@ function App() {
 
     const interval = window.setInterval(() => {
       if (board.status !== 'streaming') {
+        if (calibrationRunningRef.current && calibrationSourceRef.current) calibrationSourceRef.current.interrupted = true
         calibrationRunningRef.current = false
         setCalibrationStatus('idle')
         setCalibrationStepStartedAt(null)
@@ -3700,7 +3705,11 @@ function App() {
       }
     } catch (actionError) {
       setError(formatBoardActionError(actionError))
-      try { setBoard(await api.board()) } catch { /* Retain the recovery message. */ }
+      try {
+        const failedBoard = await api.board()
+        loadedBoardRef.current = failedBoard
+        setBoard(failedBoard)
+      } catch { /* Retain the recovery message. */ }
     } finally {
       setBusy(false)
     }

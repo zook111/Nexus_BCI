@@ -51,7 +51,7 @@ cd nexus
 
 For the Intel/Ventura setup above, replace `./script/setup.sh` with `NEXUS_PYTHON=python3.13 ./script/setup.sh` to select that interpreter explicitly. Use a fresh checkout on each machine; setup creates its local `.venv` and `node_modules`.
 
-Open **Nexus Server** on your Desktop. It starts the local services and opens [localhost:5173](http://localhost:5173). Open it again to stop them. Keep the checkout in place: the launcher points to it.
+Open **Nexus Server** on your Desktop. Its status window shows whether Nexus EEG Lab is running, with **Start server**, **Open app** and **Stop server** buttons. **Start server** starts the local services and opens [localhost:5173](http://localhost:5173). Opening Nexus Server again only shows the status; it never stops the services by itself. **Stop server** asks first when a board session or recording is active, or when its status cannot be checked. Keep the checkout in place: the launcher points to it.
 
 Reinstallation makes recoverable backups. A legacy Mindmeld launcher is retired only when it belongs to this checkout. Internal `mindmeld_api` imports and `MINDMELD_*` settings remain compatible with earlier installations.
 
@@ -89,7 +89,7 @@ To install manually, create a Python 3.12+ `.venv`, install `pip install -e 'bac
 
 The Desktop launcher checks for a newer reviewed `main` version before starting the app. Choose **Update and restart** to install the app and guides, refresh the shortcut/icon and open the workspace, or **Not now** to use the installed version. Installation can take several minutes and needs internet. A failed/offline check still lets the installed version open; no offer does not prove you are up to date.
 
-Finish and save the experiment/recording first. Stop and Reset the board, double-click **Nexus Server** to stop its services, then open it again to receive an update offer. Closing the browser alone does not stop the app. Updates never stop an active session to install themselves.
+Finish and save the experiment/recording first. Stop and Reset the board, open **Nexus Server**, choose **Stop server**, then choose **Start server** to receive an update offer. Closing the browser alone does not stop the app. Updates never stop an active session to install themselves.
 
 The updater refuses local code edits, unexpected files, divergent branches, conflicting processes and incoming files that would replace local data/settings. It keeps a recovery copy of code/dependencies and restores the previous version after an ordinary installation/startup failure. If recovery needs help, keep the app stopped and follow the message. Recordings and local settings are not replaced. Only the protected public repository is used; system Python/Node are not upgraded.
 
@@ -194,7 +194,7 @@ Defaults work without an environment file. For backend options, copy `backend/.e
 | Noisy channels | Secure reference/bias and electrode contacts, keep leads away from power supplies, and try the laptop on battery. |
 | No spoken cue | Visual instructions remain available. Browser speech support varies; audio requires a user interaction. |
 
-For launcher diagnostics, use `./script/build_and_run.sh --status`, `--verify` or `--logs`. Legacy-compatible logs remain under `~/Library/Application Support/Mindmeld Launcher`.
+For launcher diagnostics, use `./script/build_and_run.sh --status`, `--verify` or `--logs`; `--app-status` prints what the Desktop status window shows. Legacy-compatible logs remain under `~/Library/Application Support/Mindmeld Launcher`. A Desktop shortcut installed before the status window still toggles, but it no longer stops a running app while a board session or recording is active, or while that cannot be checked. Rerun `./script/install_desktop_launcher.sh` to replace it; an update installed through Nexus Server also refreshes it.
 
 ## Built for learning and inspection
 

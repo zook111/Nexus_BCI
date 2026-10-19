@@ -20,10 +20,16 @@ mkdir -p "$STATE_DIR"
 
 usage() {
   cat <<'EOF'
-Usage: script/build_and_run.sh [--toggle|--start|--stop|--status|--verify|--logs|--debug|--telemetry]
+Usage: script/build_and_run.sh [--start|--stop|--open|--status|--app-status|--verify|--logs|--debug|--toggle]
 
-With no option, toggles the Nexus backend and frontend. The launcher stores
-its PID files and logs in ~/Library/Application Support/Mindmeld Launcher.
+The Nexus Server Desktop app shows --app-status in a window with Open app,
+Start server and Stop server controls. --start opens the app if it is already
+running. With no option, --toggle is kept for older Desktop shortcuts: it starts
+stopped services, but stops running services only when no board session or
+recording is active. --stop always stops this checkout's services.
+
+The launcher stores its PID files and logs in
+~/Library/Application Support/Mindmeld Launcher.
 EOF
 }
 
@@ -262,6 +268,15 @@ prepare_student_update() {
 
 start_services() {
   local update_status
+  # A repeated launch opens the running app; it never starts a second copy or offers
+  # an update to an app in use. The update worker keeps its stopped-services contract.
+  if [ "${NEXUS_UPDATE_WORKER:-0}" != 1 ] \
+    && service_is_running "$BACKEND_PID_FILE" backend \
+    && service_is_running "$FRONTEND_PID_FILE" frontend; then
+    open_site
+    echo "Nexus is already running at $FRONTEND_URL"
+    return 0
+  fi
   LAUNCHER_SCRIPT_FOR_UPDATE="$SCRIPT_DIR/build_and_run.sh"
   prepare_student_update
   update_status=$?
@@ -341,6 +356,125 @@ show_status() {
   echo "Nexus backend: $backend; frontend: $frontend; site: $FRONTEND_URL"
 }
 
+# Read-only board/recording check for this checkout's backend. Like other native
+# local clients, curl sends no browser Origin. Any failure is reported as unknown.
+backend_session_state() {
+  local board
+  local recording
+  local session
+
+  board="$(/usr/bin/curl --fail --silent --max-time 2 --max-filesize 1048576 \
+    "$BACKEND_URL/api/board" 2>/dev/null)" || board=""
+  recording="$(/usr/bin/curl --fail --silent --max-time 2 --max-filesize 1048576 \
+    "$BACKEND_URL/api/recordings/current" 2>/dev/null)" || recording=""
+  if [ -z "$board" ] || [ -z "$recording" ]; then
+    echo unknown
+    return 0
+  fi
+  session="$(/usr/bin/osascript -l JavaScript - "$board" "$recording" 2>/dev/null <<'JXA'
+function run(argv) {
+  try {
+    const board = JSON.parse(argv[0])
+    const recording = JSON.parse(argv[1])
+    if (!board || typeof board !== 'object' || !recording || typeof recording !== 'object') return 'unknown'
+    if (recording.active === true) return 'recording'
+    if (recording.active !== false) return 'unknown'
+    if (board.status === 'streaming') return 'streaming'
+    if (board.status === 'prepared') return 'connected'
+    if (board.status === 'idle' || board.status === 'error') return 'idle'
+  } catch (error) {}
+  return 'unknown'
+}
+JXA
+)"
+  case "$session" in
+    idle|connected|streaming|recording) echo "$session" ;;
+    *) echo unknown ;;
+  esac
+}
+
+session_summary() {
+  case "$1" in
+    none) echo "" ;;
+    idle) echo "No board session or recording is active." ;;
+    connected) echo "A board is connected. Press Reset in Nexus EEG Lab before stopping the server." ;;
+    streaming) echo "The board is streaming. Press Stop and Reset in Nexus EEG Lab before stopping the server." ;;
+    recording) echo "A recording or experiment is in progress. Finish and save it in Nexus EEG Lab before stopping the server." ;;
+    *) echo "Nexus Server could not check whether a board session or recording is active." ;;
+  esac
+}
+
+# Machine-readable status for the Desktop window. Line 1 is running, stopped,
+# partial or busy; line 2 is none, idle, connected, streaming, recording or unknown;
+# line 3 is the session summary (may be empty); the remaining lines are the message.
+app_status() {
+  local backend=stopped
+  local frontend=stopped
+  local session=none
+  local summary
+  local lock_status
+  local pid
+  local ports=""
+  local message
+
+  # The probe holds the kernel lock only for /usr/bin/true. A held lock means a
+  # start, stop or update is in progress, so PID files may be about to change.
+  /usr/bin/lockf -s -t 0 "$LOCK_FILE" /usr/bin/true 2>/dev/null
+  lock_status=$?
+  if [ "$lock_status" -eq 75 ]; then
+    summary="$(session_summary unknown)"
+    printf 'busy\nunknown\n%s\n%s\n' "$summary" \
+      "Nexus Server is starting, stopping or installing an update. Wait for it to finish, then choose Check again."
+    return 0
+  fi
+
+  service_is_running "$BACKEND_PID_FILE" backend && backend=running
+  service_is_running "$FRONTEND_PID_FILE" frontend && frontend=running
+  [ "$backend" = stopped ] || session="$(backend_session_state)"
+  summary="$(session_summary "$session")"
+
+  if [ "$backend" = running ] && [ "$frontend" = running ]; then
+    message="Nexus EEG Lab is running at $FRONTEND_URL.
+
+$summary
+
+Closing the browser does not stop the server."
+    printf 'running\n%s\n%s\n%s\n' "$session" "$summary" "$message"
+  elif [ "$backend" = stopped ] && [ "$frontend" = stopped ]; then
+    message="Nexus EEG Lab is stopped.
+
+Start server checks for an offered update, starts the local services and opens the app."
+    pid="$(listener_pid "$BACKEND_PORT")"
+    [ -z "$pid" ] || ports="$ports port $BACKEND_PORT (PID $pid)"
+    pid="$(listener_pid "$FRONTEND_PORT")"
+    [ -z "$pid" ] || ports="$ports port $FRONTEND_PORT (PID $pid)"
+    if [ -n "$ports" ]; then
+      message="$message
+
+Another program is using$ports, so Start server will not work until it is closed. Nexus Server never closes other programs."
+    fi
+    printf 'stopped\nnone\n\n%s\n' "$message"
+  else
+    message="Nexus EEG Lab is only partly running (backend $backend, frontend $frontend)."
+    [ -z "$summary" ] || message="$message
+
+$summary"
+    message="$message
+
+Choose Stop server, then Start server to restart it."
+    printf 'partial\n%s\n%s\n%s\n' "$session" "$summary" "$message"
+  fi
+}
+
+open_app() {
+  if ! service_is_running "$FRONTEND_PID_FILE" frontend; then
+    echo "Nexus EEG Lab is not running. Choose Start server first." >&2
+    return 1
+  fi
+  open_site
+  echo "Opening Nexus EEG Lab at $FRONTEND_URL"
+}
+
 verify_services() {
   service_is_running "$BACKEND_PID_FILE" backend || {
     echo "Nexus backend is not running." >&2
@@ -373,7 +507,17 @@ with_lock() {
 }
 
 toggle_services() {
+  local session
   if service_is_running "$BACKEND_PID_FILE" backend || service_is_running "$FRONTEND_PID_FILE" frontend; then
+    # Older Desktop shortcuts still call --toggle. A repeated launch must not end a
+    # live board session or recording; --stop remains the explicit stop command.
+    if service_is_running "$BACKEND_PID_FILE" backend; then
+      session="$(backend_session_state)"
+      if [ "$session" != idle ]; then
+        echo "Nexus was left running. $(session_summary "$session") To stop it anyway, run ./script/build_and_run.sh --stop in the nexus folder." >&2
+        return 1
+      fi
+    fi
     stop_services
   else
     start_services
@@ -388,7 +532,9 @@ case "$ACTION" in
   --locked-toggle_services) toggle_services ;;
   --locked-start_services) start_services ;;
   --locked-stop_services) stop_services ;;
+  --open|open) open_app ;;
   --status|status) show_status ;;
+  --app-status|app-status) app_status ;;
   --verify|verify) verify_services ;;
   --logs|logs|--telemetry|telemetry)
     touch "$BACKEND_LOG" "$FRONTEND_LOG"

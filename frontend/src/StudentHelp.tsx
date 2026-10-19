@@ -57,14 +57,14 @@ export function StudentHelp() {
     </div>
     <div className="panel student-help__notes">
       <h3>Updates without Terminal</h3>
-      <p>Finish and save your experiment and recording, then Stop and Reset the board. Double-click Nexus Server to stop its services, then open it again. Closing the browser alone does not stop them.</p>
+      <p>Finish and save your experiment and recording, then Stop and Reset the board. Open Nexus Server, choose Stop server, then choose Start server. Closing the browser alone does not stop the services.</p>
       <p>When an update is offered, choose <strong>Update and restart</strong> or <strong>Not now</strong>. Installation needs internet and may take several minutes; the workspace opens when ready. Recordings and local settings stay in place. Offline checks still let your installed version open; no offer does not prove it is up to date.</p>
       <p>If recovery asks for help, keep the app stopped and ask your helper. Local code edits are preserved and block updates. Older installs need one helper-led source update and launcher reinstall first; fresh setup includes this.</p>
     </div>
     <div className="panel student-help__troubleshooting">
       <h3>If you get stuck</h3>
       <details><summary>The page will not open or says API disconnected</summary>
-        <p>If services are stopped, double-click Nexus Server once and wait for startup. If they are already running, reload the browser or <a href="/">reopen this app</a>. The default address is http://localhost:5173; this link keeps your current port. Do not open frontend/index.html directly. Opening the launcher again stops running services.</p>
+        <p>Open Nexus Server to see whether its services are running. If stopped, choose Start server and wait for startup. If running, choose Open app, reload the browser or <a href="/">reopen this app</a>. The default address is http://localhost:5173; this link keeps your current port. Do not open frontend/index.html directly. Opening Nexus Server only shows its status; Stop server asks first while a board session or recording is active.</p>
       </details>
       <details><summary>There is no headset port, or Connect fails</summary>
         <p>Check the USB dongle, USB-C adapter and headset power/PC mode. Close other acquisition apps. Refresh the port list; choose Cyton for 8 channels and the recommended /dev/cu.* USB port. For BOARD_NOT_READY_ERROR:7, Reset, wait about five seconds, then Connect and Start. Use Synthetic to check the software without the headset.</p>

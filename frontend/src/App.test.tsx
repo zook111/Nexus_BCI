@@ -200,6 +200,7 @@ it('opens student Help without a headset and returns to Console', async () => {
   for (const guide of [
     { name: 'Open setup guide PDF (opens in a new tab)', file: 'intel-ventura-setup.pdf' },
     { name: 'Open experiment guide PDF (opens in a new tab)', file: 'eyes-open-closed-experiment-guide.pdf' },
+    { name: 'Open hardware checklist PDF (opens in a new tab)', file: 'hardware-session-packet.pdf' },
     { name: 'Open research guide PDF (opens in a new tab)', file: 'student-starter-guide.pdf' },
   ]) {
     const link = within(help).getByRole('link', { name: guide.name })
@@ -207,6 +208,9 @@ it('opens student Help without a headset and returns to Console', async () => {
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
   }
+  expect(within(help).getByRole('heading', { name: 'Your first session' })).toBeInTheDocument()
+  expect(within(help).getByText('Samples freeze or the channels are noisy')).toBeInTheDocument()
+  expect(within(help).getByText(/three consecutive usable quality windows before continuing/)).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Help' })).toHaveAttribute('aria-pressed', 'true')
   expect(apiMock.connect).not.toHaveBeenCalled()
   fireEvent.click(screen.getByRole('button', { name: 'Console' }))

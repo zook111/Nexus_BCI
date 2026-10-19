@@ -8,7 +8,7 @@
 
 A local EEG science workspace for students and curious researchers.
 
-[Start here](#start-here) · [Hardware session packet](docs/hardware-session-packet.pdf) · [First experiment (PDF)](docs/eyes-open-closed-experiment-guide.pdf) · [Research guide](docs/student-starter-guide.pdf) · [Experiment Lab](docs/experiment-lab.md) · [Contributing](CONTRIBUTING.md)
+[Student start here](docs/student-start-here.md) · [Install](#start-here) · [Hardware session packet](docs/hardware-session-packet.pdf) · [First experiment (PDF)](docs/eyes-open-closed-experiment-guide.pdf) · [Research guide](docs/student-starter-guide.pdf) · [Experiment Lab](docs/experiment-lab.md) · [Contributing](CONTRIBUTING.md)
 
 </div>
 
@@ -23,6 +23,8 @@ The source project remains **Nexus BCI** ([Nexus_BCI](https://github.com/zook111
 > This is experimental education and research software. Task labels describe instructions, not verified thoughts, focus or relaxation. Synthetic signals are a software rehearsal; they are not evidence of brain-state classification. The app provides no clinical interpretation.
 
 ## Start here
+
+**Students: [start with this checklist](docs/student-start-here.md).** It puts every guide in order, explains what success looks like, and gives recovery steps if you get stuck.
 
 ### 1. Get the essentials
 
@@ -126,13 +128,13 @@ The real classifier uses OAS-shrinkage covariance with pyRiemann and scikit-lear
 | --- | --- |
 | **Console** | Acquisition, raw traces, quality checks, DSP, recordings, replay and calibration markers. |
 | **Experiment Lab** | Guided task cues, balanced labels, trial review, separate training/test data and the maths lesson. |
-| **Help** | Bundled setup, eyes-open/closed experiment and first-week research PDFs, available offline. |
+| **Help** | All four student PDFs, a first-session checklist and troubleshooting, available offline. |
 | **Feedback Lab** | Optional visual and audio feedback that pauses when signal quality is inadequate. |
 | **Doctor Demo** | Eyes-open/closed demonstrations and confidence-gated group experiences. Non-clinical throughout. |
 
-Open **Help** in the app to find the setup, experiment and first-week research PDFs. They are bundled for offline reading and open in a separate tab.
+Open **Help** in the app to find all four PDFs: Intel/Ventura setup, first experiment, hardware session checklist and first-week research. They are bundled for offline reading and open in a separate tab. Common troubleshooting steps are also available in Help. External research and manufacturer links require internet access.
 
-![Dr K’s EEG Lab Help section with student guide links](docs/images/eeg-lab-help.jpg)
+![Dr K’s EEG Lab Help section with student guide links](docs/images/eeg-lab-help.png)
 
 ## Connect the headset
 

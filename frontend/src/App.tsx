@@ -2954,6 +2954,18 @@ function App() {
     setReplayAnalysis(null)
     setReplayBusy(false)
   }, [])
+  const resetLiveFeedback = useCallback(() => {
+    setCalm(null)
+    setDsp(null)
+    setSignalQuality(null)
+    calmRef.current = null
+    dspRef.current = null
+    signalQualityRef.current = null
+    setCalmTrend([])
+    setFocusTrend([])
+    setClarityTrend([])
+    setCalmBaseline(emptyCalmBaseline)
+  }, [])
   const dspValidationMessage = validateDspControls({
     windowSize: dspWindowSize,
     bandpassLowHz: dspBandpassLowHz,
@@ -3255,7 +3267,9 @@ function App() {
     const connection = connectLiveStream(STREAM_WS_URL, {
       snapshot(snapshot) {
         const started = snapshot.status === 'streaming' && previousStatus !== 'streaming'
+        const reset = snapshot.status === 'idle' && previousStatus !== 'idle'
         previousStatus = snapshot.status
+        if (reset) resetLiveFeedback()
         if (started) {
           exitReplay()
         }
@@ -3301,7 +3315,7 @@ function App() {
       replayRequestRef.current += 1
       connection.close()
     }
-  }, [exitReplay])
+  }, [exitReplay, resetLiveFeedback])
 
   useEffect(() => {
     if (!recording.active) return undefined
@@ -3621,11 +3635,7 @@ function App() {
       const next = await action()
       setBoard(next)
       if (next.status === 'idle') {
-        setCalm(null)
-        setCalmTrend([])
-        setFocusTrend([])
-        setClarityTrend([])
-        setCalmBaseline(emptyCalmBaseline)
+        resetLiveFeedback()
       }
       if (next.status === 'streaming') {
         exitReplay()

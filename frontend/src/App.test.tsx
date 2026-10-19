@@ -355,3 +355,23 @@ it.each(['resolve', 'reject'])('ignores an old replay request that later %ss aft
   expect(screen.getByRole('button', { name: 'Preview' })).toBeEnabled()
   expect(apiMock.signalQuality).toHaveBeenCalled()
 })
+
+it('clears observer feedback history on a shared reset', async () => {
+  vi.stubEnv('VITE_OPENBCI_AUTOCONNECT_SERIAL', '')
+  apiMock.board.mockResolvedValue({ ...preparedBoard, status: 'streaming' })
+  apiMock.calmFeatures.mockResolvedValue({ status: 'streaming', signal_state: 'usable', confidence: .9,
+    calm_score: .5, source_timestamp: Date.now() / 1000, features: {}, flags: [] })
+  render(<App />)
+  fireEvent.click(screen.getByRole('button', { name: 'Feedback Lab' }))
+  const trend = () => screen.getByRole('img', { name: 'Feedback trend history' }).querySelector('.calm-trend__line')!
+  await waitFor(() => expect(trend().getAttribute('d')).not.toBe(''), { timeout: 2500 })
+  await act(async () => {
+    sockets.at(-1)?.onmessage?.(new MessageEvent('message', {
+      data: JSON.stringify({ ...preparedBoard, status: 'streaming', sample_count: 0, timestamps: [], channels: [] }),
+    }))
+    sockets.at(-1)?.onmessage?.(new MessageEvent('message', {
+      data: JSON.stringify({ ...idleBoard, sample_count: 0, timestamps: [], channels: [] }),
+    }))
+  })
+  expect(trend().getAttribute('d')).toBe('')
+})
